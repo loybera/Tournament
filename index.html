@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Torneo Pro - Balanceado y Justo</title>
+    <title>Torneo Pro - Control de Gestión</title>
     <style>
-        :root { --primary: #1e40af; --secondary: #10b981; --accent: #f59e0b; --bg: #f1f5f9; }
+        :root { --primary: #1e40af; --secondary: #10b981; --accent: #f59e0b; --danger: #dc2626; --warning: #f59e0b; --bg: #f1f5f9; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; color: #1e293b; padding-bottom: 50px; }
         nav { background: #1e293b; display: flex; justify-content: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
         .tab-btn { background: none; border: none; color: #94a3b8; padding: 15px 15px; cursor: pointer; font-weight: 600; font-size: 0.8rem; border-bottom: 3px solid transparent; }
@@ -20,6 +20,9 @@
         .btn:active { transform: scale(0.98); }
         .btn-add { background: var(--primary); color: white; }
         .btn-gen { background: var(--secondary); color: white; width: 100%; font-size: 1.1rem; margin-top: 20px; }
+        .btn-warning { background: var(--warning); color: white; flex: 1; }
+        .btn-danger { background: var(--danger); color: white; flex: 1; }
+        .action-group { display: flex; gap: 10px; margin-top: 20px; }
         .match-card { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px; background: white; }
         .match-header { background: #f8fafc; padding: 8px 15px; display: flex; justify-content: space-between; font-size: 0.8rem; border-bottom: 1px solid #e2e8f0; font-weight: bold; }
         .match-body { padding: 15px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; text-align: center; }
@@ -43,12 +46,18 @@
     <div class="container">
         <div id="jugadores" class="card active">
             <h3>Carga Masiva</h3>
-            <p><small>Pega aquí (Ej: <code>Juan, 7</code>). Una persona por línea.</small></p>
-            <textarea id="bulkPlayers" placeholder="Nombre, Categoria"></textarea>
+            <textarea id="bulkPlayers" placeholder="Nombre, Categoria (Ej: Juan, 7)"></textarea>
             <button class="btn btn-add" style="width:100%; margin-top:10px" onclick="importPlayers()">Importar Lista</button>
             <h4 style="margin-top:20px">Inscriptos: <span id="pCount">0</span></h4>
             <div id="playerList"></div>
-            <button class="btn" style="background:#ef4444; color:white; width:100%; margin-top:10px" onclick="resetPartidos()">Borrar Jugadores y Fixture</button>
+            
+            <div class="action-group">
+                <button class="btn btn-warning" onclick="resetFixtureOnly()">🔄 Rehacer Fixture</button>
+                <button class="btn btn-danger" onclick="resetAllPlayersAndMatches()">🗑️ Borrar Todo</button>
+            </div>
+            <p style="font-size: 0.7rem; color: #64748b; margin-top: 10px; text-align: center;">
+                *Las canchas y horarios se mantienen guardados siempre.
+            </p>
         </div>
 
         <div id="canchas" class="card">
@@ -59,7 +68,7 @@
                 <button class="btn btn-add" onclick="addCourt()">Añadir</button>
             </div>
             <div id="courtList"></div>
-            <button class="btn btn-gen" onclick="generateTournament()">GENERAR TORNEO EQUILIBRADO</button>
+            <button class="btn btn-gen" onclick="generateTournament()">GENERAR FIXTURE EQUILIBRADO</button>
         </div>
 
         <div id="fixture" class="card">
@@ -74,7 +83,6 @@
     </div>
 
     <script>
-        // --- DATOS Y PERSISTENCIA ---
         let players = JSON.parse(localStorage.getItem('tp_p')) || [];
         let courts = JSON.parse(localStorage.getItem('tp_c')) || [];
         let matches = JSON.parse(localStorage.getItem('tp_m')) || [];
@@ -85,7 +93,6 @@
             localStorage.setItem('tp_m', JSON.stringify(matches));
         }
 
-        // --- NAVEGACIÓN ---
         function openTab(evt, name) {
             document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -95,7 +102,6 @@
             if(name === 'fixture') renderFixture();
         }
 
-        // --- LÓGICA DE JUGADORES ---
         function importPlayers() {
             const lines = document.getElementById('bulkPlayers').value.split('\n');
             lines.forEach(line => {
@@ -127,9 +133,23 @@
 
         function removePlayer(i) { players.splice(i, 1); save(); renderPlayers(); }
 
-        function resetPartidos() {
-            if(confirm("¿Seguro? Se borrarán jugadores y fixture. Las canchas NO.")) {
-                players = []; matches = []; save(); renderPlayers(); renderFixture();
+        // --- NUEVAS FUNCIONES DE LIMPIEZA ---
+        function resetFixtureOnly() {
+            if(confirm("¿Quieres borrar solo el fixture? Mantendrás la lista de jugadores intacta para volver a sortear.")) {
+                matches = [];
+                save();
+                renderFixture();
+                alert("Fixture borrado. Puedes ir a la solapa de Canchas y generarlo de nuevo.");
+            }
+        }
+
+        function resetAllPlayersAndMatches() {
+            if(confirm("ATENCIÓN: Se borrarán todos los jugadores y el fixture actual. ¿Deseas continuar?")) {
+                players = [];
+                matches = [];
+                save();
+                renderPlayers();
+                renderFixture();
             }
         }
 
@@ -153,104 +173,61 @@
         }
         function removeCourt(i) { courts.splice(i,1); save(); renderCourts(); }
 
-        // --- ALGORITMO DE GENERACIÓN (EQUILIBRIO + PRIORIDAD) ---
         function generateTournament() {
             if(players.length < 4 || courts.length < 1) return alert("Mínimo 4 jugadores y 1 cancha");
-            
             matches = [];
             players.forEach(p => { p.matchesPlayed = 0; p.lastTurn = -1; });
 
-            // 3 Bloques de 20 minutos (1 hora de reserva)
             for(let tIdx = 0; tIdx < 3; tIdx++) {
                 let busyThisTurn = new Set();
-
                 courts.forEach(court => {
-                    // 1. Filtrar disponibles y ordenar por prioridad de descanso
                     let available = players.filter(p => !busyThisTurn.has(p.id));
-                    
                     if(available.length >= 4) {
                         available.sort((a, b) => {
                             if (a.matchesPlayed !== b.matchesPlayed) return a.matchesPlayed - b.matchesPlayed;
                             return a.lastTurn - b.lastTurn;
                         });
-
-                        // 2. Tomar los 4 que tienen prioridad
                         let selected = available.slice(0, 4);
-
-                        // 3. BALANCEO DE NIVEL:
-                        // Ordenar esos 4 por categoría (nivel real)
-                        // Para que el Cat 5 no juegue con el Cat 6 contra dos Cat 9.
-                        selected.sort((a, b) => a.cat - b.cat); // Menor número = mejor nivel
-
-                        // Pareja A: El 1ero (Mejor) + El 4to (Peor)
-                        // Pareja B: El 2do + El 3ero (Los del medio)
+                        selected.sort((a, b) => a.cat - b.cat);
                         let team1 = [selected[0], selected[3]];
                         let team2 = [selected[1], selected[2]];
-
-                        // 4. Actualizar contadores
                         selected.forEach(p => {
                             busyThisTurn.add(p.id);
                             p.matchesPlayed++;
                             p.lastTurn = tIdx;
                         });
-
-                        // 5. Calcular Hora
                         let [h, m] = court.startTime.split(':').map(Number);
                         let totalMins = h * 60 + m + (tIdx * 20);
                         let timeStr = `${Math.floor(totalMins/60).toString().padStart(2, '0')}:${(totalMins%60).toString().padStart(2, '0')}`;
-
-                        matches.push({
-                            id: 0, 
-                            sortKey: totalMins,
-                            time: timeStr,
-                            court: court.name,
-                            t1: team1, t2: team2,
-                            s1: null, s2: null
-                        });
+                        matches.push({ id: 0, sortKey: totalMins, time: timeStr, court: court.name, t1: team1, t2: team2, s1: null, s2: null });
                     }
                 });
             }
-
-            // Ordenar fixture final por hora
             matches.sort((a, b) => a.sortKey - b.sortKey || a.court.localeCompare(b.court));
             matches.forEach((m, idx) => m.id = idx + 1);
-            
             save();
             openTab(null, 'fixture');
         }
 
-        // --- RENDERIZADO FIXTURE ---
         function renderFixture() {
             const container = document.getElementById('fixtureContent');
-            if(matches.length === 0) { container.innerHTML = "<p>Sin partidos.</p>"; return; }
-
-            container.innerHTML = matches.map((m, idx) => {
-                const avg1 = ((m.t1[0].cat + m.t1[1].cat) / 2).toFixed(1);
-                const avg2 = ((m.t2[0].cat + m.t2[1].cat) / 2).toFixed(1);
-
-                return `
+            if(matches.length === 0) { container.innerHTML = "<p style='text-align:center; color:#94a3b8;'>No hay partidos generados. Ve a 'Canchas' y presiona el botón verde.</p>"; return; }
+            container.innerHTML = matches.map((m, idx) => `
                 <div class="match-card">
                     <div class="match-header">
                         <span>PARTIDO #${m.id}</span>
                         <span><span class="badge bg-hora">${m.time} HS</span> <span class="badge bg-cancha">${m.court}</span></span>
                     </div>
                     <div class="match-body">
-                        <div>
-                            <strong>${m.t1[0].name} (${m.t1[0].cat})<br>${m.t1[1].name} (${m.t1[1].cat})</strong>
-                            <span class="avg-label">Promedio: ${avg1}</span>
-                        </div>
+                        <div><strong>${m.t1[0].name} (${m.t1[0].cat})<br>${m.t1[1].name} (${m.t1[1].cat})</strong></div>
                         <div>
                             <input type="number" class="score-input" value="${m.s1 !== null ? m.s1 : ''}" onchange="updateScore(${idx}, 1, this.value)">
                             <input type="number" class="score-input" value="${m.s2 !== null ? m.s2 : ''}" onchange="updateScore(${idx}, 2, this.value)">
                         </div>
-                        <div>
-                            <strong>${m.t2[0].name} (${m.t2[0].cat})<br>${m.t2[1].name} (${m.t2[1].cat})</strong>
-                            <span class="avg-label">Promedio: ${avg2}</span>
-                        </div>
+                        <div><strong>${m.t2[0].name} (${m.t2[0].cat})<br>${m.t2[1].name} (${m.t2[1].cat})</strong></div>
                     </div>
                 </div>
-                `;
-            }).join('');
+            `).join('');
         }
 
         function updateScore(idx, team, val) {
@@ -259,7 +236,6 @@
             save();
         }
 
-        // --- RANKING ---
         function calculateRanking() {
             let s = {};
             players.forEach(p => s[p.id] = { name: p.name, wins: 0, games: 0, played: 0 });
@@ -280,7 +256,6 @@
             `).join('');
         }
 
-        // Inicialización
         renderPlayers(); renderCourts(); renderFixture();
     </script>
 </body>
