@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Torneo Pro - Rotación Justa</title>
+    <title>Torneo Pro - Control de Rotación</title>
     <style>
         :root { --primary: #1e40af; --secondary: #10b981; --accent: #f59e0b; --bg: #f1f5f9; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; color: #1e293b; padding-bottom: 50px; }
@@ -39,7 +39,6 @@
     </nav>
 
     <div class="container">
-        
         <div id="jugadores" class="card active">
             <h3>Carga Masiva de Jugadores</h3>
             <p><small>Formato: <code>Nombre, Categoría</code> (Ej: Juan Perez, 7)</small></p>
@@ -58,7 +57,7 @@
                 <button class="btn btn-add" onclick="addCourt()">Añadir</button>
             </div>
             <div id="courtList"></div>
-            <button class="btn btn-gen" onclick="generateTournament()">GENERAR FIXTURE CON PRIORIDAD</button>
+            <button class="btn btn-gen" onclick="generateTournament()">GENERAR FIXTURE JUSTO</button>
         </div>
 
         <div id="fixture" class="card">
@@ -70,112 +69,128 @@
             <h3>Ranking Individual</h3>
             <div id="rankingContent"></div>
         </div>
-
     </div>
 
     <script>
+        // Variables globales y carga de datos
         let players = JSON.parse(localStorage.getItem('tp_p')) || [];
         let courts = JSON.parse(localStorage.getItem('tp_c')) || [];
         let matches = JSON.parse(localStorage.getItem('tp_m')) || [];
 
+        // Función de navegación entre pestañas
         function openTab(evt, name) {
             document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(name).classList.add('active');
             if(evt) evt.currentTarget.classList.add('active');
+            
             if(name === 'posiciones') calculateRanking();
             if(name === 'fixture') renderFixture();
         }
 
+        // Función de importación masiva de jugadores
         function importPlayers() {
-            const text = document.getElementById('bulkPlayers').value;
-            text.split('\n').forEach(line => {
+            const textArea = document.getElementById('bulkPlayers');
+            const lines = textArea.value.split('\n');
+            
+            lines.forEach(line => {
                 const parts = line.split(',');
                 if(parts.length >= 2) {
                     const name = parts[0].trim();
                     const cat = parseInt(parts[1].trim());
-                    if(name && !isNaN(cat)) players.push({ 
-                        id: Math.random().toString(36).substr(2, 9), 
-                        name, 
-                        cat,
-                        matchesPlayed: 0,
-                        lastTurn: -1 
-                    });
+                    if(name && !isNaN(cat)) {
+                        players.push({ 
+                            id: Math.random().toString(36).substr(2, 9), 
+                            name: name, 
+                            cat: cat,
+                            matchesPlayed: 0,
+                            lastTurn: -1 
+                        });
+                    }
                 }
             });
-            document.getElementById('bulkPlayers').value = '';
-            save(); renderPlayers();
+            textArea.value = '';
+            save();
+            renderPlayers();
         }
 
         function renderPlayers() {
             document.getElementById('pCount').innerText = players.length;
-            document.getElementById('playerList').innerHTML = players.map((p, i) => `
+            const container = document.getElementById('playerList');
+            container.innerHTML = players.map((p, i) => `
                 <div class="player-list-item">
                     <span>${p.name} <strong>(Cat ${p.cat}°)</strong></span>
                     <button onclick="removePlayer(${i})" style="color:red; background:none; border:none; cursor:pointer">✕</button>
                 </div>
             `).join('');
         }
-        function removePlayer(i) { players.splice(i,1); save(); renderPlayers(); }
+
+        function removePlayer(i) {
+            players.splice(i, 1);
+            save();
+            renderPlayers();
+        }
 
         function addCourt() {
             const name = document.getElementById('cName').value;
             const time = document.getElementById('cTime').value;
             if(name && time) {
                 courts.push({ id: Date.now(), name, startTime: time });
-                save(); renderCourts();
+                save();
+                renderCourts();
             }
         }
+
         function renderCourts() {
-            document.getElementById('courtList').innerHTML = courts.map((c, i) => `
+            const container = document.getElementById('courtList');
+            container.innerHTML = courts.map((c, i) => `
                 <div class="player-list-item">
                     <span><span class="badge bg-cancha">${c.name}</span> Inicio: ${c.startTime} hs</span>
                     <button onclick="removeCourt(${i})" style="color:red; background:none; border:none; cursor:pointer">✕</button>
                 </div>
             `).join('');
         }
-        function removeCourt(i) { courts.splice(i,1); save(); renderCourts(); }
 
+        function removeCourt(i) {
+            courts.splice(i, 1);
+            save();
+            renderCourts();
+        }
+
+        // Generador con lógica de prioridad (descanso y carga)
         function generateTournament() {
             if(players.length < 4 || courts.length < 1) return alert("Faltan jugadores o canchas");
-            matches = [];
             
-            // Reiniciamos contadores internos para el algoritmo de prioridad
+            matches = [];
+            // Reset de estadísticas temporales para la generación
             players.forEach(p => { p.matchesPlayed = 0; p.lastTurn = -1; });
 
-            // Turnos de 20 min (3 por hora)
+            // Generamos para 3 bloques de 20 min (1 hora de reserva)
             for(let tIdx = 0; tIdx < 3; tIdx++) {
-                let playersInTurn = new Set();
+                let playersInThisTurn = new Set();
                 
-                // Ordenamos las canchas para procesarlas
                 courts.forEach(court => {
-                    // FILTRO DE PRIORIDAD:
-                    // 1. Que no esté jugando en este turno.
-                    // 2. Ordenar por menos partidos jugados.
-                    // 3. Empate: ordenar por quién jugó hace más tiempo (lastTurn menor).
-                    let available = players.filter(p => !playersInTurn.has(p.id));
+                    // Seleccionar disponibles que no estén en este turno
+                    let available = players.filter(p => !playersInThisTurn.has(p.id));
                     
                     if(available.length >= 4) {
+                        // Ordenar por prioridad (menos jugados, más tiempo libre)
                         available.sort((a, b) => {
-                            if (a.matchesPlayed !== b.matchesPlayed) {
-                                return a.matchesPlayed - b.matchesPlayed;
-                            }
+                            if (a.matchesPlayed !== b.matchesPlayed) return a.matchesPlayed - b.matchesPlayed;
                             return a.lastTurn - b.lastTurn;
                         });
 
-                        // Tomamos los 4 con más prioridad (los primeros de la lista ordenada)
-                        let pSelected = available.slice(0, 4);
+                        let selected = available.slice(0, 4);
                         
-                        // Equilibramos el partido por nivel (A+D vs B+C)
-                        pSelected.sort((a,b) => a.cat - b.cat);
-                        let team1 = [pSelected[0], pSelected[3]];
-                        let team2 = [pSelected[1], pSelected[2]];
+                        // Equilibrio de nivel: A+D vs B+C
+                        selected.sort((a,b) => a.cat - b.cat);
+                        let team1 = [selected[0], selected[3]];
+                        let team2 = [selected[1], selected[2]];
 
-                        // Actualizar estado de los jugadores
-                        pSelected.forEach(player => {
-                            playersInTurn.add(player.id);
-                            player.matchesPlayed += 1;
-                            player.lastTurn = tIdx;
+                        selected.forEach(p => {
+                            playersInThisTurn.add(p.id);
+                            p.matchesPlayed++;
+                            p.lastTurn = tIdx;
                         });
 
                         let [h, m] = court.startTime.split(':').map(Number);
@@ -186,8 +201,7 @@
                             sortKey: totalMins,
                             time: timeStr,
                             court: court.name,
-                            t1: team1,
-                            t2: team2,
+                            t1: team1, t2: team2,
                             s1: null, s2: null
                         });
                     }
@@ -212,8 +226,8 @@
                     <div class="match-body">
                         <div>${m.t1[0].name}<br>${m.t1[1].name}</div>
                         <div>
-                            <input type="number" class="score-input" value="${m.s1??''}" onchange="updateS(${idx}, 1, this.value)">
-                            <input type="number" class="score-input" value="${m.s2??''}" onchange="updateS(${idx}, 2, this.value)">
+                            <input type="number" class="score-input" value="${m.s1 !== null ? m.s1 : ''}" onchange="updateScore(${idx}, 1, this.value)">
+                            <input type="number" class="score-input" value="${m.s2 !== null ? m.s2 : ''}" onchange="updateScore(${idx}, 2, this.value)">
                         </div>
                         <div>${m.t2[0].name}<br>${m.t2[1].name}</div>
                     </div>
@@ -221,7 +235,7 @@
             `).join('');
         }
 
-        function updateS(idx, team, val) {
+        function updateScore(idx, team, val) {
             const v = val === "" ? null : parseInt(val);
             if(team === 1) matches[idx].s1 = v; else matches[idx].s2 = v;
             save();
@@ -255,10 +269,14 @@
 
         function resetPartidos() {
             if(confirm("¿Borrar jugadores y partidos? Las canchas se mantendrán.")){
-                players = []; matches = []; save(); renderPlayers(); renderFixture();
+                players = []; matches = []; 
+                localStorage.removeItem('tp_p');
+                localStorage.removeItem('tp_m');
+                renderPlayers(); renderFixture();
             }
         }
 
+        // Carga inicial
         renderPlayers(); renderCourts(); renderFixture();
     </script>
 </body>
