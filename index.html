@@ -177,14 +177,12 @@
     if (players.length < 4 || courts.length < 1) return alert("Mínimo 4 jugadores y 1 cancha");
     
     matches = [];
-    // Resetear historial para sorteo limpio
     players.forEach(p => { 
         p.matchesPlayed = 0; 
         p.lastTurn = -1;
-        p.historyPartners = []; // Nuevo: para no repetir compañeros
+        p.historyPartners = []; 
     });
 
-    // 1. Crear línea de tiempo global (Cronograma de slots)
     let timeline = [];
     const bloquesPorHora = 3; 
 
@@ -200,53 +198,70 @@
         }
     });
 
-    // Ordenar slots por hora (para repartir jugadores en todas las canchas simultáneamente)
     timeline.sort((a, b) => a.timeMins - b.timeMins || a.courtName.localeCompare(b.courtName));
 
-    // 2. Asignación de Jugadores
     timeline.forEach(slot => {
-        // Jugadores ocupados en este mismo horario exacto
         let ocupadosAhora = new Set();
         matches.filter(m => m.sortKey === slot.timeMins).forEach(m => {
             [...m.t1, ...m.t2].forEach(p => ocupadosAhora.add(p.id));
         });
 
+        // 1. Obtener candidatos disponibles ordenados por prioridad de espera
         let disponibles = players.filter(p => !ocupadosAhora.has(p.id));
+        disponibles.sort((a, b) => {
+            if (a.matchesPlayed !== b.matchesPlayed) return a.matchesPlayed - b.matchesPlayed;
+            return a.lastTurn - b.lastTurn;
+        });
 
         if (disponibles.length >= 4) {
-            // PRIORIDAD: Los que menos jugaron y más esperaron
-            disponibles.sort((a, b) => {
-                if (a.matchesPlayed !== b.matchesPlayed) return a.matchesPlayed - b.matchesPlayed;
-                return a.lastTurn - b.lastTurn;
-            });
+            let seleccionados = [];
+            let candidatos = [...disponibles];
 
-            let sel = disponibles.slice(0, 4);
+            // 2. Intentar armar un grupo de 4 donde las parejas sean nuevas
+            // Tomamos al primero de la lista (el que más debe jugar)
+            let p1 = candidatos.shift();
+            seleccionados.push(p1);
 
-            // Intentar armar parejas que NO hayan jugado juntas antes
-            // Ordenamos por nivel para tener una base
-            sel.sort((a, b) => a.cat - b.cat);
-
-            let t1, t2;
+            // Buscamos un compañero (p2) que NO haya jugado con p1
+            let p2Index = candidatos.findIndex(c => !p1.historyPartners.includes(c.id));
             
-            // Lógica de no repetir equipos: 
-            // Probamos la combinación ideal (1+4 vs 2+3). 
-            // Si 1 y 4 ya jugaron juntos, probamos (1+3 vs 2+4).
-            if (sel[0].historyPartners.includes(sel[3].id)) {
-                t1 = [sel[0], sel[2]];
-                t2 = [sel[1], sel[3]];
+            // Si no hay nadie que no haya jugado con p1, tomamos el que sigue por prioridad
+            if (p2Index === -1) p2Index = 0; 
+            let p2 = candidatos.splice(p2Index, 1)[0];
+            seleccionados.push(p2);
+
+            // Buscamos p3 y p4 para el equipo rival
+            // Intentamos que p3 y p4 tampoco hayan jugado juntos
+            let p3 = candidatos.shift();
+            seleccionados.push(p3);
+
+            let p4Index = candidatos.findIndex(c => !p3.historyPartners.includes(c.id));
+            if (p4Index === -1) p4Index = 0;
+            let p4 = candidatos.splice(p4Index, 1)[0];
+            seleccionados.push(p4);
+
+            // 3. Balanceo de nivel dentro de los 4 elegidos
+            // (Para mantener la competitividad pero respetando que p1/p2 son pareja si es posible)
+            seleccionados.sort((a, b) => a.cat - b.cat);
+            
+            // Re-chequeo de parejas para el balanceo:
+            // Intentamos Mejor+Peor vs Medios, pero si ya jugaron juntos, barajamos.
+            let t1, t2;
+            if (!seleccionados[0].historyPartners.includes(seleccionados[3].id)) {
+                t1 = [seleccionados[0], seleccionados[3]];
+                t2 = [seleccionados[1], seleccionados[2]];
             } else {
-                t1 = [sel[0], sel[3]];
-                t2 = [sel[1], sel[2]];
+                t1 = [seleccionados[0], seleccionados[2]];
+                t2 = [seleccionados[1], seleccionados[3]];
             }
 
-            // Registrar en el historial de los jugadores
+            // 4. Guardar historial y actualizar estado
             t1[0].historyPartners.push(t1[1].id);
             t1[1].historyPartners.push(t1[0].id);
             t2[0].historyPartners.push(t2[1].id);
             t2[1].historyPartners.push(t2[0].id);
 
-            // Actualizar datos de juego
-            sel.forEach(p => {
+            [...t1, ...t2].forEach(p => {
                 p.matchesPlayed++;
                 p.lastTurn = slot.timeMins;
             });
@@ -257,13 +272,11 @@
                 court: slot.courtName,
                 t1: t1,
                 t2: t2,
-                s1: null,
-                s2: null
+                s1: null, s2: null
             });
         }
     });
 
-    // 3. Orden final y guardado
     matches.sort((a, b) => a.sortKey - b.sortKey || a.court.localeCompare(b.court));
     matches.forEach((m, idx) => m.id = idx + 1);
     
