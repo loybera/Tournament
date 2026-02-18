@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Torneo Pro - Control de Rotación</title>
+    <title>Torneo Pro - Balanceado y Justo</title>
     <style>
         :root { --primary: #1e40af; --secondary: #10b981; --accent: #f59e0b; --bg: #f1f5f9; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; color: #1e293b; padding-bottom: 50px; }
@@ -16,7 +16,8 @@
         textarea { width: 100%; height: 120px; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-family: monospace; box-sizing: border-box; }
         .grid-inputs { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; margin-bottom: 15px; }
         input, select, button { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; }
-        .btn { cursor: pointer; font-weight: bold; border: none; padding: 10px 20px; border-radius: 8px; }
+        .btn { cursor: pointer; font-weight: bold; border: none; padding: 10px 20px; border-radius: 8px; transition: 0.2s; }
+        .btn:active { transform: scale(0.98); }
         .btn-add { background: var(--primary); color: white; }
         .btn-gen { background: var(--secondary); color: white; width: 100%; font-size: 1.1rem; margin-top: 20px; }
         .match-card { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px; background: white; }
@@ -27,6 +28,7 @@
         .bg-cancha { background: #3b82f6; }
         .bg-hora { background: #64748b; }
         .player-list-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+        .avg-label { font-size: 0.7rem; color: #64748b; margin-top: 4px; display: block; }
     </style>
 </head>
 <body>
@@ -40,24 +42,24 @@
 
     <div class="container">
         <div id="jugadores" class="card active">
-            <h3>Carga Masiva de Jugadores</h3>
-            <p><small>Formato: <code>Nombre, Categoría</code> (Ej: Juan Perez, 7)</small></p>
-            <textarea id="bulkPlayers" placeholder="Juan Perez, 7&#10;Maria Garcia, 6"></textarea>
+            <h3>Carga Masiva</h3>
+            <p><small>Pega aquí (Ej: <code>Juan, 7</code>). Una persona por línea.</small></p>
+            <textarea id="bulkPlayers" placeholder="Nombre, Categoria"></textarea>
             <button class="btn btn-add" style="width:100%; margin-top:10px" onclick="importPlayers()">Importar Lista</button>
-            <h4 style="margin-top:20px">Jugadores Registrados: <span id="pCount">0</span></h4>
+            <h4 style="margin-top:20px">Inscriptos: <span id="pCount">0</span></h4>
             <div id="playerList"></div>
-            <button class="btn" style="background:#ef4444; color:white; width:100%; margin-top:10px" onclick="resetPartidos()">Limpiar Jugadores y Fixture</button>
+            <button class="btn" style="background:#ef4444; color:white; width:100%; margin-top:10px" onclick="resetPartidos()">Borrar Jugadores y Fixture</button>
         </div>
 
         <div id="canchas" class="card">
-            <h3>Configuración de Canchas</h3>
+            <h3>Canchas y Horarios</h3>
             <div class="grid-inputs">
-                <input type="text" id="cName" placeholder="Nombre Cancha">
+                <input type="text" id="cName" placeholder="Cancha 1">
                 <input type="time" id="cTime" value="18:00">
                 <button class="btn btn-add" onclick="addCourt()">Añadir</button>
             </div>
             <div id="courtList"></div>
-            <button class="btn btn-gen" onclick="generateTournament()">GENERAR FIXTURE JUSTO</button>
+            <button class="btn btn-gen" onclick="generateTournament()">GENERAR TORNEO EQUILIBRADO</button>
         </div>
 
         <div id="fixture" class="card">
@@ -72,27 +74,30 @@
     </div>
 
     <script>
-        // Variables globales y carga de datos
+        // --- DATOS Y PERSISTENCIA ---
         let players = JSON.parse(localStorage.getItem('tp_p')) || [];
         let courts = JSON.parse(localStorage.getItem('tp_c')) || [];
         let matches = JSON.parse(localStorage.getItem('tp_m')) || [];
 
-        // Función de navegación entre pestañas
+        function save() {
+            localStorage.setItem('tp_p', JSON.stringify(players));
+            localStorage.setItem('tp_c', JSON.stringify(courts));
+            localStorage.setItem('tp_m', JSON.stringify(matches));
+        }
+
+        // --- NAVEGACIÓN ---
         function openTab(evt, name) {
             document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(name).classList.add('active');
             if(evt) evt.currentTarget.classList.add('active');
-            
             if(name === 'posiciones') calculateRanking();
             if(name === 'fixture') renderFixture();
         }
 
-        // Función de importación masiva de jugadores
+        // --- LÓGICA DE JUGADORES ---
         function importPlayers() {
-            const textArea = document.getElementById('bulkPlayers');
-            const lines = textArea.value.split('\n');
-            
+            const lines = document.getElementById('bulkPlayers').value.split('\n');
             lines.forEach(line => {
                 const parts = line.split(',');
                 if(parts.length >= 2) {
@@ -101,23 +106,18 @@
                     if(name && !isNaN(cat)) {
                         players.push({ 
                             id: Math.random().toString(36).substr(2, 9), 
-                            name: name, 
-                            cat: cat,
-                            matchesPlayed: 0,
-                            lastTurn: -1 
+                            name, cat, matchesPlayed: 0, lastTurn: -1 
                         });
                     }
                 }
             });
-            textArea.value = '';
-            save();
-            renderPlayers();
+            document.getElementById('bulkPlayers').value = '';
+            save(); renderPlayers();
         }
 
         function renderPlayers() {
             document.getElementById('pCount').innerText = players.length;
-            const container = document.getElementById('playerList');
-            container.innerHTML = players.map((p, i) => `
+            document.getElementById('playerList').innerHTML = players.map((p, i) => `
                 <div class="player-list-item">
                     <span>${p.name} <strong>(Cat ${p.cat}°)</strong></span>
                     <button onclick="removePlayer(${i})" style="color:red; background:none; border:none; cursor:pointer">✕</button>
@@ -125,79 +125,82 @@
             `).join('');
         }
 
-        function removePlayer(i) {
-            players.splice(i, 1);
-            save();
-            renderPlayers();
+        function removePlayer(i) { players.splice(i, 1); save(); renderPlayers(); }
+
+        function resetPartidos() {
+            if(confirm("¿Seguro? Se borrarán jugadores y fixture. Las canchas NO.")) {
+                players = []; matches = []; save(); renderPlayers(); renderFixture();
+            }
         }
 
+        // --- LÓGICA DE CANCHAS ---
         function addCourt() {
             const name = document.getElementById('cName').value;
             const time = document.getElementById('cTime').value;
             if(name && time) {
                 courts.push({ id: Date.now(), name, startTime: time });
-                save();
-                renderCourts();
+                save(); renderCourts();
             }
         }
 
         function renderCourts() {
-            const container = document.getElementById('courtList');
-            container.innerHTML = courts.map((c, i) => `
+            document.getElementById('courtList').innerHTML = courts.map((c, i) => `
                 <div class="player-list-item">
                     <span><span class="badge bg-cancha">${c.name}</span> Inicio: ${c.startTime} hs</span>
                     <button onclick="removeCourt(${i})" style="color:red; background:none; border:none; cursor:pointer">✕</button>
                 </div>
             `).join('');
         }
+        function removeCourt(i) { courts.splice(i,1); save(); renderCourts(); }
 
-        function removeCourt(i) {
-            courts.splice(i, 1);
-            save();
-            renderCourts();
-        }
-
-        // Generador con lógica de prioridad (descanso y carga)
+        // --- ALGORITMO DE GENERACIÓN (EQUILIBRIO + PRIORIDAD) ---
         function generateTournament() {
-            if(players.length < 4 || courts.length < 1) return alert("Faltan jugadores o canchas");
+            if(players.length < 4 || courts.length < 1) return alert("Mínimo 4 jugadores y 1 cancha");
             
             matches = [];
-            // Reset de estadísticas temporales para la generación
             players.forEach(p => { p.matchesPlayed = 0; p.lastTurn = -1; });
 
-            // Generamos para 3 bloques de 20 min (1 hora de reserva)
+            // 3 Bloques de 20 minutos (1 hora de reserva)
             for(let tIdx = 0; tIdx < 3; tIdx++) {
-                let playersInThisTurn = new Set();
-                
+                let busyThisTurn = new Set();
+
                 courts.forEach(court => {
-                    // Seleccionar disponibles que no estén en este turno
-                    let available = players.filter(p => !playersInThisTurn.has(p.id));
+                    // 1. Filtrar disponibles y ordenar por prioridad de descanso
+                    let available = players.filter(p => !busyThisTurn.has(p.id));
                     
                     if(available.length >= 4) {
-                        // Ordenar por prioridad (menos jugados, más tiempo libre)
                         available.sort((a, b) => {
                             if (a.matchesPlayed !== b.matchesPlayed) return a.matchesPlayed - b.matchesPlayed;
                             return a.lastTurn - b.lastTurn;
                         });
 
+                        // 2. Tomar los 4 que tienen prioridad
                         let selected = available.slice(0, 4);
-                        
-                        // Equilibrio de nivel: A+D vs B+C
-                        selected.sort((a,b) => a.cat - b.cat);
+
+                        // 3. BALANCEO DE NIVEL:
+                        // Ordenar esos 4 por categoría (nivel real)
+                        // Para que el Cat 5 no juegue con el Cat 6 contra dos Cat 9.
+                        selected.sort((a, b) => a.cat - b.cat); // Menor número = mejor nivel
+
+                        // Pareja A: El 1ero (Mejor) + El 4to (Peor)
+                        // Pareja B: El 2do + El 3ero (Los del medio)
                         let team1 = [selected[0], selected[3]];
                         let team2 = [selected[1], selected[2]];
 
+                        // 4. Actualizar contadores
                         selected.forEach(p => {
-                            playersInThisTurn.add(p.id);
+                            busyThisTurn.add(p.id);
                             p.matchesPlayed++;
                             p.lastTurn = tIdx;
                         });
 
+                        // 5. Calcular Hora
                         let [h, m] = court.startTime.split(':').map(Number);
                         let totalMins = h * 60 + m + (tIdx * 20);
                         let timeStr = `${Math.floor(totalMins/60).toString().padStart(2, '0')}:${(totalMins%60).toString().padStart(2, '0')}`;
 
                         matches.push({
+                            id: 0, 
                             sortKey: totalMins,
                             time: timeStr,
                             court: court.name,
@@ -208,31 +211,46 @@
                 });
             }
 
+            // Ordenar fixture final por hora
             matches.sort((a, b) => a.sortKey - b.sortKey || a.court.localeCompare(b.court));
             matches.forEach((m, idx) => m.id = idx + 1);
+            
             save();
             openTab(null, 'fixture');
         }
 
+        // --- RENDERIZADO FIXTURE ---
         function renderFixture() {
             const container = document.getElementById('fixtureContent');
-            if(matches.length === 0) { container.innerHTML = "<p>No hay partidos generados.</p>"; return; }
-            container.innerHTML = matches.map((m, idx) => `
+            if(matches.length === 0) { container.innerHTML = "<p>Sin partidos.</p>"; return; }
+
+            container.innerHTML = matches.map((m, idx) => {
+                const avg1 = ((m.t1[0].cat + m.t1[1].cat) / 2).toFixed(1);
+                const avg2 = ((m.t2[0].cat + m.t2[1].cat) / 2).toFixed(1);
+
+                return `
                 <div class="match-card">
                     <div class="match-header">
                         <span>PARTIDO #${m.id}</span>
                         <span><span class="badge bg-hora">${m.time} HS</span> <span class="badge bg-cancha">${m.court}</span></span>
                     </div>
                     <div class="match-body">
-                        <div>${m.t1[0].name}<br>${m.t1[1].name}</div>
+                        <div>
+                            <strong>${m.t1[0].name} (${m.t1[0].cat})<br>${m.t1[1].name} (${m.t1[1].cat})</strong>
+                            <span class="avg-label">Promedio: ${avg1}</span>
+                        </div>
                         <div>
                             <input type="number" class="score-input" value="${m.s1 !== null ? m.s1 : ''}" onchange="updateScore(${idx}, 1, this.value)">
                             <input type="number" class="score-input" value="${m.s2 !== null ? m.s2 : ''}" onchange="updateScore(${idx}, 2, this.value)">
                         </div>
-                        <div>${m.t2[0].name}<br>${m.t2[1].name}</div>
+                        <div>
+                            <strong>${m.t2[0].name} (${m.t2[0].cat})<br>${m.t2[1].name} (${m.t2[1].cat})</strong>
+                            <span class="avg-label">Promedio: ${avg2}</span>
+                        </div>
                     </div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function updateScore(idx, team, val) {
@@ -241,6 +259,7 @@
             save();
         }
 
+        // --- RANKING ---
         function calculateRanking() {
             let s = {};
             players.forEach(p => s[p.id] = { name: p.name, wins: 0, games: 0, played: 0 });
@@ -256,27 +275,12 @@
             document.getElementById('rankingContent').innerHTML = sorted.map((p, i) => `
                 <div class="player-list-item">
                     <span><strong>${i+1}. ${p.name}</strong></span>
-                    <span>${p.wins} PG | ${p.games} Games | ${p.played} PJ</span>
+                    <span>${p.wins} G | ${p.games} Pts | ${p.played} PJ</span>
                 </div>
             `).join('');
         }
 
-        function save() {
-            localStorage.setItem('tp_p', JSON.stringify(players));
-            localStorage.setItem('tp_c', JSON.stringify(courts));
-            localStorage.setItem('tp_m', JSON.stringify(matches));
-        }
-
-        function resetPartidos() {
-            if(confirm("¿Borrar jugadores y partidos? Las canchas se mantendrán.")){
-                players = []; matches = []; 
-                localStorage.removeItem('tp_p');
-                localStorage.removeItem('tp_m');
-                renderPlayers(); renderFixture();
-            }
-        }
-
-        // Carga inicial
+        // Inicialización
         renderPlayers(); renderCourts(); renderFixture();
     </script>
 </body>
