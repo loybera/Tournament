@@ -180,6 +180,7 @@
 
     matches = [];
 
+    // Inicialización
     players.forEach(p => {
         p.matchesPlayed = 0;
         p.lastTurn = -1;
@@ -188,25 +189,29 @@
     });
 
     // ---------------------------
-    // Timeline (RESPETA TU LÓGICA)
+    // Timeline (TU LÓGICA ORIGINAL)
     // ---------------------------
     let timeline = [];
     const bloquesPorHora = 3;
 
     courts.forEach(court => {
+
         let [h, m] = court.startTime.split(':').map(Number);
 
         for (let i = 0; i < bloquesPorHora; i++) {
+
             let totalMins = h * 60 + m + (i * 20);
 
             timeline.push({
                 timeMins: totalMins,
                 courtName: court.name,
-                timeStr: `${Math.floor(totalMins / 60)
-                    .toString()
-                    .padStart(2, '0')}:${(totalMins % 60)
-                    .toString()
-                    .padStart(2, '0')}`
+                timeStr:
+                    `${Math.floor(totalMins / 60)
+                        .toString()
+                        .padStart(2, '0')}:` +
+                    `${(totalMins % 60)
+                        .toString()
+                        .padStart(2, '0')}`
             });
         }
     });
@@ -217,29 +222,64 @@
     );
 
     // ---------------------------
-    // VALIDACIONES
+    // Función principal de búsqueda
     // ---------------------------
+    function findValidMatch(
+        candidates,
+        allowRepeatRivals = false,
+        allowRepeatPartners = false
+    ) {
 
-    function canBePartners(p1, p2) {
+        for (let i = 0; i < candidates.length; i++) {
+            for (let j = i + 1; j < candidates.length; j++) {
 
-        // No repetir pareja
-        if (p1.historyPartners.has(p2.id)) return false;
+                let a = candidates[i];
+                let b = candidates[j];
 
-        // FORZAR mezcla 6 + 7
-        if (p1.cat === p2.cat) return false;
+                // Siempre forzar 6 + 7
+                if (a.cat === b.cat) continue;
 
-        return true;
-    }
+                if (!allowRepeatPartners &&
+                    a.historyPartners.has(b.id)) continue;
 
-    function canFace(t1, t2) {
+                for (let k = 0; k < candidates.length; k++) {
+                    if (k === i || k === j) continue;
 
-        for (let a of t1) {
-            for (let b of t2) {
-                if (a.historyRivals.has(b.id)) return false;
+                    for (let l = k + 1; l < candidates.length; l++) {
+                        if (l === i || l === j) continue;
+
+                        let c = candidates[k];
+                        let d = candidates[l];
+
+                        if (c.cat === d.cat) continue;
+
+                        if (!allowRepeatPartners &&
+                            c.historyPartners.has(d.id)) continue;
+
+                        if (!allowRepeatRivals) {
+
+                            let invalid = false;
+
+                            for (let p1 of [a, b]) {
+                                for (let p2 of [c, d]) {
+                                    if (p1.historyRivals.has(p2.id)) {
+                                        invalid = true;
+                                        break;
+                                    }
+                                }
+                                if (invalid) break;
+                            }
+
+                            if (invalid) continue;
+                        }
+
+                        return [[a, b], [c, d]];
+                    }
+                }
             }
         }
 
-        return true;
+        return null;
     }
 
     function registerMatch(t1, t2, time) {
@@ -264,42 +304,9 @@
         });
     }
 
-    function findValidMatch(candidates) {
-
-        for (let i = 0; i < candidates.length; i++) {
-            for (let j = i + 1; j < candidates.length; j++) {
-
-                let a = candidates[i];
-                let b = candidates[j];
-
-                if (!canBePartners(a, b)) continue;
-
-                for (let k = 0; k < candidates.length; k++) {
-                    if (k === i || k === j) continue;
-
-                    for (let l = k + 1; l < candidates.length; l++) {
-                        if (l === i || l === j) continue;
-
-                        let c = candidates[k];
-                        let d = candidates[l];
-
-                        if (!canBePartners(c, d)) continue;
-
-                        if (!canFace([a, b], [c, d])) continue;
-
-                        return [[a, b], [c, d]];
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
     // ---------------------------
-    // GENERACIÓN DE PARTIDOS
+    // Generación de partidos
     // ---------------------------
-
     timeline.forEach(slot => {
 
         let ocupadosAhora = new Set();
@@ -312,11 +319,14 @@
                 );
             });
 
-        let disponibles = players.filter(p => !ocupadosAhora.has(p.id));
+        let disponibles =
+            players.filter(p => !ocupadosAhora.has(p.id));
 
         if (disponibles.length < 4) return;
 
-        // Prioridad: menos partidos y mayor espera
+        // Prioridad:
+        // 1) Menos partidos
+        // 2) Más espera
         disponibles.sort((a, b) => {
             if (a.matchesPlayed !== b.matchesPlayed)
                 return a.matchesPlayed - b.matchesPlayed;
@@ -324,13 +334,27 @@
             return a.lastTurn - b.lastTurn;
         });
 
-        // Intentar máxima igualdad
-        let minPlayed = Math.min(...players.map(p => p.matchesPlayed));
-        let prioridad = disponibles.filter(p => p.matchesPlayed === minPlayed);
+        // Igualar cantidad
+        let minPlayed =
+            Math.min(...players.map(p => p.matchesPlayed));
 
-        let candidatos = prioridad.length >= 4 ? prioridad : disponibles;
+        let prioridad =
+            disponibles.filter(p => p.matchesPlayed === minPlayed);
 
-        let result = findValidMatch(candidatos);
+        let candidatos =
+            prioridad.length >= 4 ? prioridad : disponibles;
+
+        // Fase 1: estricta
+        let result =
+            findValidMatch(candidatos, false, false);
+
+        // Fase 2: permitir repetir rivales
+        if (!result)
+            result = findValidMatch(candidatos, true, false);
+
+        // Fase 3: permitir repetir compañeros
+        if (!result)
+            result = findValidMatch(candidatos, true, true);
 
         if (!result) return;
 
@@ -359,6 +383,7 @@
     save();
     openTab(null, 'fixture');
 }
+
 
 
         
