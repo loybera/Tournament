@@ -3,216 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Torneo Pro - Selector de Modo</title>
+    <title>Torneo Pro - Rotación Total</title>
     <style>
-        :root { --primary: #1e40af; --secondary: #10b981; --accent: #f59e0b; --danger: #dc2626; --warning: #f59e0b; --bg: #f1f5f9; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; color: #1e293b; padding-bottom: 50px; }
-        nav { background: #1e293b; display: flex; justify-content: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-        .tab-btn { background: none; border: none; color: #94a3b8; padding: 15px 15px; cursor: pointer; font-weight: 600; font-size: 0.8rem; border-bottom: 3px solid transparent; }
+        :root { --primary: #1e40af; --secondary: #10b981; --danger: #dc2626; --bg: #f1f5f9; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 50px; color: #1e293b; }
+        nav { background: #1e293b; display: flex; justify-content: center; position: sticky; top: 0; z-index: 1000; }
+        .tab-btn { background: none; border: none; color: #94a3b8; padding: 15px; cursor: pointer; font-weight: 600; border-bottom: 3px solid transparent; }
         .tab-btn.active { color: white; border-bottom: 3px solid var(--secondary); }
         .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: none; }
         .card.active { display: block; }
-        textarea { width: 100%; height: 100px; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; width: 100%; box-sizing: border-box; }
-        .grid-inputs { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; margin-bottom: 15px; }
-        input, select, button { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; }
-        .btn { cursor: pointer; font-weight: bold; border: none; padding: 10px 20px; border-radius: 8px; }
-        .btn-add { background: var(--primary); color: white; }
-        .btn-gen { background: var(--secondary); color: white; width: 100%; font-size: 1.1rem; margin-top: 10px; }
-        .action-group { display: flex; gap: 10px; margin-top: 20px; }
-        .btn-warning { background: var(--warning); color: white; flex: 1; }
-        .btn-danger { background: var(--danger); color: white; flex: 1; }
-        .match-card { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px; background: white; }
-        .match-header { background: #f8fafc; padding: 8px 15px; display: flex; justify-content: space-between; font-size: 0.8rem; border-bottom: 1px solid #e2e8f0; font-weight: bold; }
-        .match-body { padding: 15px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; text-align: center; }
-        .score-input { width: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 2px solid #3b82f6; border-radius: 4px; }
-        .badge { padding: 2px 6px; border-radius: 4px; color: white; font-size: 0.7rem; }
-        .bg-cancha { background: #3b82f6; }
-        .bg-hora { background: #64748b; }
-        .player-list-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
-        .mode-selector { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 10px; }
+        textarea { width: 100%; height: 100px; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; box-sizing: border-box; }
+        .btn { cursor: pointer; font-weight: bold; border: none; padding: 10px 20px; border-radius: 8px; margin-top: 10px; }
+        .btn-add { background: var(--primary); color: white; width: 100%; }
+        .btn-gen { background: var(--secondary); color: white; width: 100%; font-size: 1.1rem; }
+        .btn-danger { background: var(--danger); color: white; }
+        .match-card { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px; background: white; overflow: hidden; }
+        .match-header { background: #f8fafc; padding: 8px 15px; display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; border-bottom: 1px solid #e2e8f0; }
+        .match-body { padding: 15px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; }
+        .score-input { width: 40px; text-align: center; font-weight: bold; }
+        .player-item { padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
     </style>
 </head>
 <body>
 
-    <nav>
-        <button class="tab-btn active" onclick="openTab(event, 'jugadores')">JUGADORES</button>
-        <button class="tab-btn" onclick="openTab(event, 'canchas')">CANCHAS</button>
-        <button class="tab-btn" onclick="openTab(event, 'fixture')">FIXTURE</button>
-        <button class="tab-btn" onclick="openTab(event, 'posiciones')">POSICIONES</button>
-    </nav>
+<nav>
+    <button class="tab-btn active" onclick="showTab('jugadores')">JUGADORES</button>
+    <button class="tab-btn" onclick="showTab('canchas')">CANCHAS / GEN</button>
+    <button class="tab-btn" onclick="showTab('fixture')">FIXTURE</button>
+</nav>
 
-    <div class="container">
-        <div id="jugadores" class="card active">
-            <h3>Carga Masiva</h3>
-            <textarea id="bulkPlayers" placeholder="Nombre, Categoria (Ej: German, 7)"></textarea>
-            <button class="btn btn-add" style="width:100%; margin-top:10px" onclick="importPlayers()">Importar Lista</button>
-            <h4 style="margin-top:20px">Inscriptos: <span id="pCount">0</span></h4>
-            <div id="playerList"></div>
-            <div class="action-group">
-                <button class="btn btn-warning" onclick="resetFixtureOnly()">🔄 Rehacer Fixture</button>
-                <button class="btn btn-danger" onclick="resetAllPlayersAndMatches()">🗑️ Borrar Todo</button>
-            </div>
-        </div>
-
-        <div id="canchas" class="card">
-            <h3>Canchas y Horarios</h3>
-            <div class="grid-inputs">
-                <input type="text" id="cName" placeholder="Nombre Cancha">
-                <input type="time" id="cTime" value="18:00">
-                <button class="btn btn-add" onclick="addCourt()">Añadir</button>
-            </div>
-            <div id="courtList"></div>
-
-            <div class="mode-selector">
-                <label><strong>Modo de Torneo:</strong></label><br>
-                <select id="tournamentMode" style="width: 100%; margin-top: 10px;">
-                    <option value="social">🎭 Modo Social (Priorizar rotación de compañeros)</option>
-                    <option value="competitive">🏆 Modo Competitivo (Priorizar equilibrio de nivel)</option>
-                </select>
-            </div>
-            <button class="btn btn-gen" onclick="generateTournament()">GENERAR FIXTURE</button>
-        </div>
-
-        <div id="fixture" class="card"><div id="fixtureContent"></div></div>
-        <div id="posiciones" class="card"><div id="rankingContent"></div></div>
+<div class="container">
+    <div id="jugadores" class="card active">
+        <h3>Carga de Jugadores</h3>
+        <textarea id="bulk" placeholder="Nombre, Categoria (Ej: German, 7)"></textarea>
+        <button class="btn btn-add" onclick="importPlayers()">Importar Lista</button>
+        <div id="pList" style="margin-top:20px"></div>
+        <button class="btn btn-danger" onclick="clearAll()">Borrar Todo</button>
     </div>
 
-    <script>
-        let players = JSON.parse(localStorage.getItem('tp_p')) || [];
-        let courts = JSON.parse(localStorage.getItem('tp_c')) || [];
-        let matches = JSON.parse(localStorage.getItem('tp_m')) || [];
+    <div id="canchas" class="card">
+        <h3>Canchas</h3>
+        <div style="display:flex; gap:10px; margin-bottom:20px">
+            <input type="text" id="cn" placeholder="Cancha 1" style="flex:1">
+            <input type="time" id="ct" value="18:00">
+            <button class="btn btn-add" onclick="addCourt()" style="margin:0; width:auto"> + </button>
+        </div>
+        <div id="cList"></div>
+        <hr>
+        <button class="btn btn-gen" onclick="generate()">GENERAR FIXTURE SIN REPETICIONES</button>
+    </div>
 
-        function save() {
-            localStorage.setItem('tp_p', JSON.stringify(players));
-            localStorage.setItem('tp_c', JSON.stringify(courts));
-            localStorage.setItem('tp_m', JSON.stringify(matches));
-        }
+    <div id="fixture" class="card">
+        <div id="fContent"></div>
+    </div>
+</div>
 
-        function openTab(evt, name) {
-            document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(name).classList.add('active');
-            if(evt) evt.currentTarget.classList.add('active');
-            if(name === 'posiciones') calculateRanking();
-            if(name === 'fixture') renderFixture();
-        }
+<script>
+    let players = JSON.parse(localStorage.getItem('p_v4')) || [];
+    let courts = JSON.parse(localStorage.getItem('c_v4')) || [];
+    let matches = [];
 
-        function importPlayers() {
-            const lines = document.getElementById('bulkPlayers').value.split('\n');
-            lines.forEach(line => {
-                const parts = line.split(',');
-                if(parts.length >= 2) {
-                    const name = parts[0].trim();
-                    const cat = parseInt(parts[1].trim());
-                    if(name && !isNaN(cat)) {
-                        players.push({ id: Math.random().toString(36).substr(2, 9), name, cat, matchesPlayed: 0, lastTurn: -1, historyPartners: [] });
-                    }
+    function showTab(id) {
+        document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        event.target.classList.add('active');
+        if(id === 'fixture') renderFixture();
+    }
+
+    function importPlayers() {
+        document.getElementById('bulk').value.split('\n').forEach(l => {
+            let [n, c] = l.split(',');
+            if(n && c) players.push({id: Math.random().toString(36).substr(2,9), name: n.trim(), cat: parseInt(c), played: 0, last: -1, partners: []});
+        });
+        document.getElementById('bulk').value = '';
+        save(); renderPlayers();
+    }
+
+    function renderPlayers() {
+        document.getElementById('pList').innerHTML = players.map((p, i) => `
+            <div class="player-item">${p.name} (Cat ${p.cat}) <span onclick="removePlayer(${i})" style="color:red; cursor:pointer">✕</span></div>
+        `).join('');
+    }
+
+    function addCourt() {
+        courts.push({name: document.getElementById('cn').value || 'Cancha', time: document.getElementById('ct').value});
+        save(); renderCourts();
+    }
+
+    function renderCourts() {
+        document.getElementById('cList').innerHTML = courts.map((c, i) => `
+            <div class="player-item">${c.name} - ${c.time}hs <span onclick="removeCourt(${i})" style="color:red; cursor:pointer">✕</span></div>
+        `).join('');
+    }
+
+    function removePlayer(i) { players.splice(i,1); save(); renderPlayers(); }
+    function removeCourt(i) { courts.splice(i,1); save(); renderCourts(); }
+    function clearAll() { if(confirm("¿Borrar todo?")) { players=[]; matches=[]; save(); renderPlayers(); } }
+    function save() { localStorage.setItem('p_v4', JSON.stringify(players)); localStorage.setItem('c_v4', JSON.stringify(courts)); }
+
+    function generate() {
+        if(players.length < 4) return alert("Mínimo 4 jugadores");
+        matches = [];
+        players.forEach(p => { p.played = 0; p.last = -1; p.partners = []; });
+
+        let slots = [];
+        courts.forEach(c => {
+            let [h, m] = c.time.split(':').map(Number);
+            for(let i=0; i<4; i++) { // Generamos 4 turnos de 20 min
+                slots.push({ mins: (h*60+m) + (i*20), cName: c.name, time: "" });
+            }
+        });
+        slots.sort((a,b) => a.mins - b.mins);
+
+        slots.forEach(slot => {
+            let h = Math.floor(slot.mins/60);
+            let m = slot.mins%60;
+            slot.time = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+
+            let busy = new Set();
+            matches.filter(m => m.mins === slot.mins).forEach(m => [...m.t1, ...m.t2].forEach(p => busy.add(p.id)));
+
+            let pool = players.filter(p => !busy.has(p.id));
+            pool.sort((a,b) => a.played - b.played || a.last - b.last);
+
+            if(pool.length >= 4) {
+                // SELECCIÓN CON RESTRICCIÓN DE COMPAÑERO
+                let p1 = pool.shift();
+                let p2Index = pool.findIndex(x => !p1.partners.includes(x.id));
+                if(p2Index === -1) p2Index = 0; // Fallback si es matemáticamente imposible
+                let p2 = pool.splice(p2Index, 1)[0];
+
+                let p3 = pool.shift();
+                let p4Index = pool.findIndex(x => !p3.partners.includes(x.id));
+                if(p4Index === -1) p4Index = 0;
+                let p4 = pool.splice(p4Index, 1)[0];
+
+                let teamA = [p1, p2];
+                let teamB = [p3, p4];
+
+                // MEZCLA DE CATEGORÍAS (BALANCEO)
+                let all = [...teamA, ...teamB].sort((a,b) => a.cat - b.cat);
+                // Forzamos: El mejor con el peor (si no jugaron juntos)
+                if(!all[0].partners.includes(all[3].id)) {
+                    teamA = [all[0], all[3]];
+                    teamB = [all[1], all[2]];
                 }
-            });
-            document.getElementById('bulkPlayers').value = '';
-            save(); renderPlayers();
-        }
 
-        function renderPlayers() {
-            document.getElementById('pCount').innerText = players.length;
-            document.getElementById('playerList').innerHTML = players.map((p, i) => `
-                <div class="player-list-item"><span>${p.name} (Cat ${p.cat})</span><button onclick="removePlayer(${i})" style="color:red; background:none; border:none; cursor:pointer">✕</button></div>
-            `).join('');
-        }
-        function removePlayer(i) { players.splice(i,1); save(); renderPlayers(); }
-        function addCourt() { const n=document.getElementById('cName').value, t=document.getElementById('cTime').value; if(n&&t){courts.push({id:Date.now(), name:n, startTime:t}); save(); renderCourts();}}
-        function renderCourts() { document.getElementById('courtList').innerHTML = courts.map((c,i)=>`<div class="player-list-item"><span>${c.name} - ${c.startTime} hs</span><button onclick="removeCourt(${i})" style="color:red; background:none; border:none; cursor:pointer">✕</button></div>`).join(''); }
-        function removeCourt(i){ courts.splice(i,1); save(); renderCourts(); }
-        function resetFixtureOnly(){ matches=[]; save(); renderFixture(); }
-        function resetAllPlayersAndMatches(){ if(confirm("¿Borrar todo?")){players=[]; matches=[]; save(); renderPlayers(); renderFixture();}}
+                // Registrar compañero
+                teamA[0].partners.push(teamA[1].id); teamA[1].partners.push(teamA[0].id);
+                teamB[0].partners.push(teamB[1].id); teamB[1].partners.push(teamB[0].id);
 
-        function generateTournament() {
-            if (players.length < 4 || courts.length < 1) return alert("Faltan datos");
-            const mode = document.getElementById('tournamentMode').value;
-            matches = [];
-            players.forEach(p => { p.matchesPlayed = 0; p.lastTurn = -1; p.historyPartners = []; });
+                [...teamA, ...teamB].forEach(p => { p.played++; p.last = slot.mins; });
 
-            let timeline = [];
-            courts.forEach(court => {
-                let [h, m] = court.startTime.split(':').map(Number);
-                for (let i = 0; i < 3; i++) {
-                    let totalMins = h * 60 + m + (i * 20);
-                    timeline.push({ timeMins: totalMins, courtName: court.name, timeStr: `${Math.floor(totalMins/60).toString().padStart(2,'0')}:${(totalMins%60).toString().padStart(2,'0')}` });
-                }
-            });
-            timeline.sort((a, b) => a.timeMins - b.timeMins);
+                matches.push({ mins: slot.mins, time: slot.time, court: slot.cName, t1: teamA, t2: teamB });
+            }
+        });
+        showTab('fixture');
+    }
 
-            timeline.forEach(slot => {
-                let ocupados = new Set();
-                matches.filter(m => m.sortKey === slot.timeMins).forEach(m => [...m.t1, ...m.t2].forEach(p => ocupados.add(p.id)));
-                
-                let disponibles = players.filter(p => !ocupados.has(p.id));
-                disponibles.sort((a,b) => (a.matchesPlayed - b.matchesPlayed) || (a.lastTurn - b.lastTurn));
-
-                if (disponibles.length >= 4) {
-                    let sel = [];
-                    let pool = [...disponibles];
-
-                    if (mode === "social") {
-                        // MODO SOCIAL: Buscamos activamente romper parejas repetidas
-                        let p1 = pool.shift(); sel.push(p1);
-                        let p2Idx = pool.findIndex(c => !p1.historyPartners.includes(c.id));
-                        let p2 = pool.splice(p2Idx === -1 ? 0 : p2Idx, 1)[0]; sel.push(p2);
-                        let p3 = pool.shift(); sel.push(p3);
-                        let p4Idx = pool.findIndex(c => !p3.historyPartners.includes(c.id));
-                        let p4 = pool.splice(p4Idx === -1 ? 0 : p4Idx, 1)[0]; sel.push(p4);
-                    } else {
-                        // MODO COMPETITIVO: Tomamos los 4 con prioridad y los equilibramos por nivel
-                        sel = pool.slice(0, 4);
-                    }
-
-                    // Balanceo de nivel final
-                    sel.sort((a, b) => a.cat - b.cat);
-                    let t1 = [sel[0], sel[3]], t2 = [sel[1], sel[2]];
-
-                    // Si en modo competitivo resultaba pareja repetida, intentamos un swap ligero
-                    if (mode === "competitive" && (sel[0].historyPartners.includes(sel[3].id))) {
-                        t1 = [sel[0], sel[2]]; t2 = [sel[1], sel[3]];
-                    }
-
-                    t1[0].historyPartners.push(t1[1].id); t1[1].historyPartners.push(t1[0].id);
-                    t2[0].historyPartners.push(t2[1].id); t2[1].historyPartners.push(t2[0].id);
-                    [...t1, ...t2].forEach(p => { p.matchesPlayed++; p.lastTurn = slot.timeMins; });
-
-                    matches.push({ sortKey: slot.timeMins, time: slot.timeStr, court: slot.courtName, t1, t2, s1: null, s2: null });
-                }
-            });
-            matches.forEach((m, i) => m.id = i + 1);
-            save(); openTab(null, 'fixture');
-        }
-
-        function renderFixture() {
-            const container = document.getElementById('fixtureContent');
-            if(matches.length === 0) { container.innerHTML = "<p>No hay fixture.</p>"; return; }
-            container.innerHTML = "<h3>Partidos</h3>" + matches.map((m, idx) => `
-                <div class="match-card">
-                    <div class="match-header"><span>#${m.id} - ${m.time} HS</span><span>${m.court}</span></div>
-                    <div class="match-body">
-                        <div>${m.t1[0].name} (${m.t1[0].cat})<br>${m.t1[1].name} (${m.t1[1].cat})</div>
-                        <div><input type="number" class="score-input" value="${m.s1??''}" onchange="updateS(${idx},1,this.value)"><input type="number" class="score-input" value="${m.s2??''}" onchange="updateS(${idx},2,this.value)"></div>
-                        <div>${m.t2[0].name} (${m.t2[0].cat})<br>${m.t2[1].name} (${m.t2[1].cat})</div>
-                    </div>
+    function renderFixture() {
+        document.getElementById('fContent').innerHTML = matches.map((m, i) => `
+            <div class="match-card">
+                <div class="match-header"><span>PARTIDO #${i+1} - ${m.time}hs</span> <span>${m.court}</span></div>
+                <div class="match-body">
+                    <div>${m.t1[0].name} (${m.t1[0].cat})<br>${m.t1[1].name} (${m.t1[1].cat})</div>
+                    <div style="font-weight:bold; color:#94a3b8">VS</div>
+                    <div>${m.t2[0].name} (${m.t2[0].cat})<br>${m.t2[1].name} (${m.t2[1].cat})</div>
                 </div>
-            `).join('');
-        }
-        function updateS(i, t, v) { const val=v===""?null:parseInt(v); if(t===1) matches[i].s1=val; else matches[i].s2=val; save(); }
-        function calculateRanking() {
-            let s = {}; players.forEach(p => s[p.id] = { name: p.name, wins: 0, played: 0 });
-            matches.forEach(m => {
-                if(m.s1===null||m.s2===null) return;
-                [...m.t1,...m.t2].forEach(p => s[p.id].played++);
-                if(m.s1>m.s2) m.t1.forEach(p=>s[p.id].wins++); else if(m.s2>m.s1) m.t2.forEach(p=>s[p.id].wins++);
-            });
-            const sorted = Object.values(s).sort((a,b)=>b.wins-a.wins);
-            document.getElementById('rankingContent').innerHTML = "<h3>Ranking</h3>"+sorted.map((p,i)=>`<div class="player-list-item"><span>${i+1}. ${p.name}</span><span>${p.wins} G / ${p.played} J</span></div>`).join('');
-        }
-        renderPlayers(); renderCourts();
-    </script>
+            </div>
+        `).join('');
+    }
+
+    renderPlayers(); renderCourts();
+</script>
 </body>
 </html>
