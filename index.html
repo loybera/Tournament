@@ -173,75 +173,78 @@
         }
         function removeCourt(i) { courts.splice(i,1); save(); renderCourts(); }
 
-        function generateTournament() {
+       function generateTournament() {
     if (players.length < 4 || courts.length < 1) return alert("Mínimo 4 jugadores y 1 cancha");
     
     matches = [];
-    // Reset de historial para el sorteo
+    // Resetear historial para sorteo limpio
     players.forEach(p => { 
         p.matchesPlayed = 0; 
         p.lastTurn = -1; 
     });
 
-    const totalTurnosDisponibles = 3; // 1 hora / 20 min
+    // 1. Crear todos los "slots" de tiempo/cancha disponibles
+    let timeline = [];
+    const bloquesPorHora = 3; // 3 bloques de 20 min
 
-    for (let tIdx = 0; tIdx < totalTurnosDisponibles; tIdx++) {
-        let ocupadosEnEsteTurno = new Set();
+    courts.forEach(court => {
+        let [h, m] = court.startTime.split(':').map(Number);
+        for (let i = 0; i < bloquesPorHora; i++) {
+            let totalMins = h * 60 + m + (i * 20);
+            timeline.push({
+                timeMins: totalMins,
+                courtName: court.name,
+                timeStr: `${Math.floor(totalMins/60).toString().padStart(2, '0')}:${(totalMins%60).toString().padStart(2, '0')}`
+            });
+        }
+    });
 
-        // Intentamos llenar cada cancha en este horario
-        courts.forEach(court => {
-            // Buscamos jugadores que NO estén jugando AHORA
-            let candidatos = players.filter(p => !ocupadosEnEsteTurno.has(p.id));
+    // 2. Ordenar cronológicamente (Importante: 18:00 Cancha 1, 18:00 Cancha 2, 18:20 Cancha 1...)
+    timeline.sort((a, b) => a.timeMins - b.timeMins || a.courtName.localeCompare(b.courtName));
 
-            if (candidatos.length >= 4) {
-                // ORDEN DE PRIORIDAD CRÍTICO:
-                candidatos.sort((a, b) => {
-                    // 1. El que menos partidos jugó en total tiene prioridad absoluta
-                    if (a.matchesPlayed !== b.matchesPlayed) {
-                        return a.matchesPlayed - b.matchesPlayed;
-                    }
-                    // 2. Si jugaron lo mismo, el que lleva más tiempo esperando (lastTurn menor)
-                    return a.lastTurn - b.lastTurn;
-                });
-
-                // Tomamos los 4 con mayor urgencia de juego
-                let seleccionados = candidatos.slice(0, 4);
-
-                // BALANCEO DE PAREJAS (Nivel)
-                // Ordenamos por categoría (el menor número es mejor nivel)
-                seleccionados.sort((a, b) => a.cat - b.cat);
-                
-                // Pareja 1: El mejor + el peor | Pareja 2: Los dos del medio
-                let t1 = [seleccionados[0], seleccionados[3]];
-                let t2 = [seleccionados[1], seleccionados[2]];
-
-                // Marcar como jugados y actualizar su último turno activo
-                seleccionados.forEach(p => {
-                    p.matchesPlayed++;
-                    p.lastTurn = tIdx;
-                    ocupadosEnEsteTurno.add(p.id);
-                });
-
-                // Calcular horario
-                let [h, m] = court.startTime.split(':').map(Number);
-                let totalMins = h * 60 + m + (tIdx * 20);
-                let timeStr = `${Math.floor(totalMins/60).toString().padStart(2, '0')}:${(totalMins%60).toString().padStart(2, '0')}`;
-
-                matches.push({
-                    id: 0,
-                    sortKey: totalMins,
-                    time: timeStr,
-                    court: court.name,
-                    t1: t1,
-                    t2: t2,
-                    s1: null,
-                    s2: null
-                });
-            }
+    // 3. Asignar jugadores siguiendo la cola de espera
+    timeline.forEach(slot => {
+        // En cada slot de tiempo, buscamos quiénes NO están jugando YA en ese mismo minuto
+        let ocupadosAhora = new Set();
+        matches.filter(m => m.sortKey === slot.timeMins).forEach(m => {
+            [...m.t1, ...m.t2].forEach(p => ocupadosAhora.add(p.id));
         });
-    }
 
-    // Ordenamiento final del fixture
+        let disponibles = players.filter(p => !ocupadosAhora.has(p.id));
+
+        if (disponibles.length >= 4) {
+            // PRIORIDAD GLOBAL: El que menos partidos tiene en el torneo total entra primero
+            disponibles.sort((a, b) => {
+                if (a.matchesPlayed !== b.matchesPlayed) return a.matchesPlayed - b.matchesPlayed;
+                return a.lastTurn - b.lastTurn; // El que espera hace más tiempo
+            });
+
+            let seleccionados = disponibles.slice(0, 4);
+
+            // Equilibrar nivel entre los 4 seleccionados
+            seleccionados.sort((a, b) => a.cat - b.cat);
+            let t1 = [seleccionados[0], seleccionados[3]]; // Mejor + Peor
+            let t2 = [seleccionados[1], seleccionados[2]]; // Los dos del medio
+
+            // Actualizar historial del jugador
+            seleccionados.forEach(p => {
+                p.matchesPlayed++;
+                p.lastTurn = slot.timeMins;
+            });
+
+            matches.push({
+                sortKey: slot.timeMins,
+                time: slot.timeStr,
+                court: slot.courtName,
+                t1: t1,
+                t2: t2,
+                s1: null,
+                s2: null
+            });
+        }
+    });
+
+    // 4. Ordenar fixture final y guardar
     matches.sort((a, b) => a.sortKey - b.sortKey || a.court.localeCompare(b.court));
     matches.forEach((m, idx) => m.id = idx + 1);
     
