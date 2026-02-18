@@ -108,7 +108,7 @@
             if(name === 'fixture') renderFixture();
         }
 
-       function importPlayers() {
+     function importPlayers() {
     const lines = document.getElementById('bulkPlayers').value.split('\n');
 
     lines.forEach(line => {
@@ -122,7 +122,8 @@
                     id: Math.random().toString(36).substr(2, 9), 
                     name,
                     cat,
-                    startTime: "18:00", // NUEVO
+                    startTime: "18:00",
+                    endTime: "23:59",   // 🔥 NUEVO
                     matchesPlayed: 0,
                     lastTurn: -1 
                 });
@@ -136,29 +137,44 @@
 }
 
 
+
  function renderPlayers() {
-        document.getElementById('pCount').innerText = players.length;
-    
-        document.getElementById('playerList').innerHTML =
-            players.map((p, i) => `
-                <div class="player-list-item">
-                    <span>
-                        ${p.name} <strong>(Cat ${p.cat}°)</strong><br>
-                        <small>Ingreso:</small>
-                        <input type="time"
-                            value="${p.startTime || '18:00'}"
-                            onchange="updateStartTime(${i}, this.value)"
-                            style="font-size:0.8rem;">
-                    </span>
-    
-                    <button onclick="removePlayer(${i})"
-                        style="color:red;background:none;border:none;cursor:pointer">✕</button>
-                </div>
-            `).join('');
-    }
+
+    document.getElementById('pCount').innerText = players.length;
+
+    document.getElementById('playerList').innerHTML =
+        players.map((p, i) => `
+            <div class="player-list-item">
+                <span>
+                    ${p.name} <strong>(Cat ${p.cat}°)</strong><br>
+
+                    <small>Ingreso:</small>
+                    <input type="time"
+                        value="${p.startTime || '18:00'}"
+                        onchange="updateStartTime(${i}, this.value)"
+                        style="font-size:0.75rem;">
+
+                    <small>Salida:</small>
+                    <input type="time"
+                        value="${p.endTime || '23:59'}"
+                        onchange="updateEndTime(${i}, this.value)"
+                        style="font-size:0.75rem;">
+                </span>
+
+                <button onclick="removePlayer(${i})"
+                    style="color:red;background:none;border:none;cursor:pointer">✕</button>
+            </div>
+        `).join('');
+}
+
 
 function updateStartTime(i, value) {
     players[i].startTime = value;
+    save();
+}
+
+function updateEndTime(i, value) {
+    players[i].endTime = value;
     save();
 }
 
@@ -371,17 +387,28 @@ function updateStartTime(i, value) {
             });
 
         let disponibles =
-            players.filter(p => {
-        
-                if (ocupadosAhora.has(p.id)) return false;
-        
-                if (!p.startTime) return true;
-        
-                let [h, m] = p.startTime.split(':').map(Number);
-                let ingresoMins = h * 60 + m;
-        
-                return slot.timeMins >= ingresoMins;
-            });
+    players.filter(p => {
+
+        if (ocupadosAhora.has(p.id)) return false;
+
+        let ingresoMins = 0;
+        let salidaMins = 24 * 60;
+
+        if (p.startTime) {
+            let [h1, m1] = p.startTime.split(':').map(Number);
+            ingresoMins = h1 * 60 + m1;
+        }
+
+        if (p.endTime) {
+            let [h2, m2] = p.endTime.split(':').map(Number);
+            salidaMins = h2 * 60 + m2;
+        }
+
+        // 🔥 Solo puede jugar entre ingreso y salida
+        return slot.timeMins >= ingresoMins &&
+               slot.timeMins < salidaMins;
+    });
+
 
 
         console.log("Disponibles:",
@@ -477,10 +504,10 @@ function updateStartTime(i, value) {
 
 function regenerateFutureMatches() {
 
-    if (!confirm("Se recalcularán SOLO los partidos no jugados. ¿Continuar?"))
+    if (!confirm("Se recalcularán SOLO los partidos no jugados respetando jugadores que ya se fueron. ¿Continuar?"))
         return;
 
-    // conservar partidos ya jugados
+    // conservar partidos jugados
     const playedMatches =
         matches.filter(m => m.s1 !== null && m.s2 !== null);
 
@@ -490,6 +517,7 @@ function regenerateFutureMatches() {
 
     generateTournament();
 }
+
 
 
 function deleteMatch(index) {
