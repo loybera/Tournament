@@ -173,10 +173,15 @@
         }
         function removeCourt(i) { courts.splice(i,1); save(); renderCourts(); }
 
-   function generateTournament() {
+  function generateTournament() {
 
-    if (players.length < 4 || courts.length < 1)
+    console.clear();
+    console.log("=== INICIO GENERACIÓN TORNEO ===");
+
+    if (players.length < 4 || courts.length < 1) {
+        console.log("ERROR: jugadores o canchas insuficientes");
         return alert("Mínimo 4 jugadores y 1 cancha");
+    }
 
     matches = [];
 
@@ -191,13 +196,17 @@
         p.historyRivals = new Set();
     });
 
+    console.log("Jugadores:", players.map(p => `${p.name} (${p.cat})`));
+
     // =========================
     // Construcción timeline
     // =========================
     let timeline = [];
-    const bloquesPorHora = 3; // 20 min
+    const bloquesPorHora = 3;
 
     courts.forEach(court => {
+
+        console.log("Procesando cancha:", court.name, "Inicio:", court.startTime);
 
         let [h, m] = court.startTime.split(':').map(Number);
 
@@ -224,13 +233,17 @@
         a.courtName.localeCompare(b.courtName)
     );
 
+    console.log("Timeline generado:");
+    timeline.forEach(t => console.log(t.timeStr, t.courtName));
+
     // =========================
     // Buscar match válido
     // =========================
     function findValidMatch(
         candidates,
         allowRepeatRivals = false,
-        allowRepeatPartners = false
+        allowRepeatPartners = false,
+        phase = ""
     ) {
 
         for (let i = 0; i < candidates.length; i++) {
@@ -240,9 +253,7 @@
                 let b = candidates[j];
 
                 if (a.cat === b.cat) continue;
-
-                if (!allowRepeatPartners &&
-                    a.historyPartners.has(b.id)) continue;
+                if (!allowRepeatPartners && a.historyPartners.has(b.id)) continue;
 
                 for (let k = 0; k < candidates.length; k++) {
                     if (k === i || k === j) continue;
@@ -254,14 +265,10 @@
                         let d = candidates[l];
 
                         if (c.cat === d.cat) continue;
-
-                        if (!allowRepeatPartners &&
-                            c.historyPartners.has(d.id)) continue;
+                        if (!allowRepeatPartners && c.historyPartners.has(d.id)) continue;
 
                         if (!allowRepeatRivals) {
-
                             let invalid = false;
-
                             for (let p1 of [a, b]) {
                                 for (let p2 of [c, d]) {
                                     if (p1.historyRivals.has(p2.id)) {
@@ -271,10 +278,10 @@
                                 }
                                 if (invalid) break;
                             }
-
                             if (invalid) continue;
                         }
 
+                        console.log("✔ Match encontrado en fase", phase);
                         return [[a, b], [c, d]];
                     }
                 }
@@ -289,13 +296,15 @@
     // =========================
     function registerMatch(t1, t2, time) {
 
-        // compañeros
+        console.log("Registrando partido:",
+            `${t1[0].name} + ${t1[1].name} VS ${t2[0].name} + ${t2[1].name}`
+        );
+
         t1[0].historyPartners.add(t1[1].id);
         t1[1].historyPartners.add(t1[0].id);
         t2[0].historyPartners.add(t2[1].id);
         t2[1].historyPartners.add(t2[0].id);
 
-        // rivales
         for (let a of t1) {
             for (let b of t2) {
                 a.historyRivals.add(b.id);
@@ -307,12 +316,18 @@
             p.matchesPlayed++;
             p.lastTurn = time;
         });
+
+        console.log("Estado matchesPlayed:",
+            players.map(p => `${p.name}:${p.matchesPlayed}`).join(" | ")
+        );
     }
 
     // =========================
     // Generación
     // =========================
     timeline.forEach(slot => {
+
+        console.log("\n--- SLOT", slot.timeStr, slot.courtName, "---");
 
         let ocupadosAhora = new Set();
 
@@ -327,9 +342,15 @@
         let disponibles =
             players.filter(p => !ocupadosAhora.has(p.id));
 
-        if (disponibles.length < 4) return;
+        console.log("Disponibles:",
+            disponibles.map(p => `${p.name}(${p.matchesPlayed})`)
+        );
 
-        // Prioridad: menos partidos y más espera
+        if (disponibles.length < 4) {
+            console.log("❌ No hay suficientes jugadores");
+            return;
+        }
+
         disponibles.sort((a, b) => {
             if (a.matchesPlayed !== b.matchesPlayed)
                 return a.matchesPlayed - b.matchesPlayed;
@@ -347,26 +368,18 @@
 
         let result = null;
 
-        // FASE 1 estricta
-        result = findValidMatch(candidatos, false, false);
-
-        // FASE 2 repetir rivales
+        result = findValidMatch(candidatos, false, false, 1);
         if (!result)
-            result = findValidMatch(candidatos, true, false);
-
-        // FASE 3 repetir compañeros
+            result = findValidMatch(candidatos, true, false, 2);
         if (!result)
-            result = findValidMatch(candidatos, true, true);
-
-        // FASE 4 intentar con todos
+            result = findValidMatch(candidatos, true, true, 3);
         if (!result)
-            result = findValidMatch(disponibles, true, true);
+            result = findValidMatch(disponibles, true, true, 4);
 
-        // FASE 5 supervivencia total
         if (!result) {
+            console.log("⚠ Activando fase 5 supervivencia");
             for (let i = 0; i < disponibles.length; i++) {
                 for (let j = i + 1; j < disponibles.length; j++) {
-
                     if (disponibles[i].cat === disponibles[j].cat) continue;
 
                     for (let k = 0; k < disponibles.length; k++) {
@@ -374,7 +387,6 @@
 
                         for (let l = k + 1; l < disponibles.length; l++) {
                             if (l === i || l === j) continue;
-
                             if (disponibles[k].cat === disponibles[l].cat) continue;
 
                             result = [
@@ -391,7 +403,10 @@
             }
         }
 
-        if (!result) return;
+        if (!result) {
+            console.log("❌ No se pudo generar partido en este slot");
+            return;
+        }
 
         let [t1, t2] = result;
 
@@ -408,16 +423,15 @@
         });
     });
 
-    matches.sort((a, b) =>
-        a.sortKey - b.sortKey ||
-        a.court.localeCompare(b.court)
-    );
+    console.log("\n=== FIN GENERACIÓN ===");
+    console.log("Total partidos generados:", matches.length);
 
     matches.forEach((m, idx) => m.id = idx + 1);
 
     save();
     openTab(null, 'fixture');
 }
+
 
 
 
