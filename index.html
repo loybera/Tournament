@@ -3,60 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Torneo Equilibrado - A & B</title>
+    <title>Torneo Americano - Fixture Completo</title>
     <style>
-        :root { --primary: #2563eb; --accent: #f59e0b; --bg: #f8fafc; --text: #1e293b; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 15px; max-width: 900px; margin: auto; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        :root { --primary: #1e40af; --secondary: #10b981; --bg: #f3f4f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 15px; max-width: 1000px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
         .flex-input { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
-        input, select, button { padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; }
-        button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; }
-        .btn-start { background: #059669; width: 100%; margin-top: 10px; }
-        .player-item { display: flex; justify-content: space-between; align-items: center; background: #f1f5f9; padding: 8px 12px; border-radius: 6px; margin-bottom: 5px; }
-        .cat-badge { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
-        .cat-a { background: #dcfce7; color: #166534; }
-        .cat-b { background: #fef9c3; color: #854d0e; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th { text-align: left; color: #64748b; font-size: 0.8rem; padding: 10px; border-bottom: 2px solid #e2e8f0; }
-        td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; }
-        .score-input { width: 45px; text-align: center; font-weight: bold; border: 2px solid #e2e8f0; }
+        input, select, button { padding: 12px; border-radius: 8px; border: 1px solid #d1d5db; }
+        button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        button:hover { opacity: 0.9; }
+        .player-item { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 5px; }
+        .badge { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; background: #e5e7eb; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; min-width: 600px; }
+        th { background: #f9fafb; padding: 12px; text-align: center; border-bottom: 2px solid #e5e7eb; font-size: 0.85rem; }
+        td { padding: 15px 10px; text-align: center; border-bottom: 1px solid #f3f4f6; }
+        .score-input { width: 50px; text-align: center; font-size: 1.1rem; border: 2px solid #3b82f6; border-radius: 4px; }
         .hidden { display: none; }
-        .rank-card { border-left: 4px solid var(--primary); padding: 10px; background: #fff; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .rank-card { background: white; padding: 15px; border-radius: 10px; border-top: 5px solid var(--secondary); text-align: center; }
     </style>
 </head>
 <body>
 
-    <h2 style="text-align: center; color: var(--primary);">🏆 Torneo Pro-Am Equilibrado</h2>
+    <h2 style="text-align: center; color: var(--primary);">🎾 Organizador de Torneo Americano</h2>
 
     <section id="setup" class="card">
         <h3>1. Registro de Jugadores</h3>
-        <p><small>Dividí a los jugadores en Categoría A (Mejores) y B (Resto) para parejas parejas parejas.</small></p>
         <div class="flex-input">
-            <input type="text" id="pName" placeholder="Nombre..." style="flex: 2;">
+            <input type="text" id="pName" placeholder="Nombre del jugador..." style="flex: 2;">
             <select id="pCat" style="flex: 1;">
-                <option value="A">Categoría A</option>
-                <option value="B" selected>Categoría B</option>
+                <option value="5">Cat 5° (Alta)</option>
+                <option value="6">Cat 6°</option>
+                <option value="7">Cat 7°</option>
+                <option value="8">Cat 8°</option>
+                <option value="9" selected>Cat 9° (Baja)</option>
             </select>
-            <button onclick="addPlayer()">Añadir</button>
+            <button onclick="addPlayer()">Registrar</button>
         </div>
-        <div id="listA"><strong>Nivel A:</strong> <span id="countA">0</span></div>
-        <div id="listB" style="margin-top: 10px;"><strong>Nivel B:</strong> <span id="countB">0</span></div>
-        <div id="playerDisplay" style="margin-top: 15px;"></div>
-        <button id="btnGen" class="btn-start hidden" onclick="startTournament()">Generar Cruces Equilibrados</button>
+        <div id="playerDisplay"></div>
+        <button id="btnGen" class="hidden" style="width: 100%; margin-top: 15px; background: var(--secondary);" onclick="generateFixture()">Generar Todos los Partidos Posibles</button>
     </section>
 
     <section id="tournament" class="card hidden">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h3>Fixture</h3>
-            <button onclick="showFinalResults()" style="background: var(--accent);">Finalizar</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3>2. Partidos a Jugar</h3>
+            <button onclick="finalize()" style="background: #f59e0b;">Finalizar y Ver Resultados</button>
         </div>
-        <div id="matchesTable"></div>
+        <div class="table-container" id="fixtureTable"></div>
     </section>
 
     <section id="results" class="card hidden">
-        <h3>Ranking Individual</h3>
-        <div id="rankingList"></div>
-        <button onclick="location.reload()" style="width: 100%; margin-top: 15px; background: #64748b;">Reiniciar</button>
+        <h3 style="text-align: center;">🏆 Ranking de Ganadores</h3>
+        <div id="rankingGrid" class="grid"></div>
+        <button onclick="location.reload()" style="width: 100%; margin-top: 25px; background: #6b7280;">Empezar de Nuevo</button>
     </section>
 
     <script>
@@ -65,9 +65,9 @@
 
         function addPlayer() {
             const name = document.getElementById('pName').value.trim();
-            const cat = document.getElementById('pCat').value;
-            if(name) {
-                players.push({ name, cat, wins: 0, games: 0, played: 0 });
+            const cat = parseInt(document.getElementById('pCat').value);
+            if (name) {
+                players.push({ id: Date.now(), name, cat, wins: 0, games: 0, played: 0 });
                 document.getElementById('pName').value = '';
                 renderPlayers();
             }
@@ -75,21 +75,13 @@
 
         function renderPlayers() {
             const display = document.getElementById('playerDisplay');
-            const catA = players.filter(p => p.cat === 'A');
-            const catB = players.filter(p => p.cat === 'B');
-            
-            document.getElementById('countA').innerText = catA.length;
-            document.getElementById('countB').innerText = catB.length;
-
             display.innerHTML = players.map((p, i) => `
                 <div class="player-item">
-                    <span>${p.name} <span class="cat-badge ${p.cat === 'A' ? 'cat-a' : 'cat-b'}">CAT ${p.cat}</span></span>
-                    <button onclick="removePlayer(${i})" style="background:none; color:red; padding:0">✕</button>
+                    <span><strong>${p.name}</strong> <span class="badge">Cat ${p.cat}°</span></span>
+                    <button onclick="removePlayer(${i})" style="background:none; color:#ef4444; font-size:1.2rem;">×</button>
                 </div>
             `).join('');
-
-            // Necesitamos al menos 2 de cada para armar una pareja A+B contra otra A+B
-            document.getElementById('btnGen').classList.toggle('hidden', (catA.length < 2 || catB.length < 2));
+            document.getElementById('btnGen').classList.toggle('hidden', players.length < 4);
         }
 
         function removePlayer(i) {
@@ -97,72 +89,105 @@
             renderPlayers();
         }
 
-        function startTournament() {
+        function generateFixture() {
             document.getElementById('setup').classList.add('hidden');
             document.getElementById('tournament').classList.remove('hidden');
-
-            let poolA = players.filter(p => p.cat === 'A').sort(() => Math.random() - 0.5);
-            let poolB = players.filter(p => p.cat === 'B').sort(() => Math.random() - 0.5);
-            
             matches = [];
-            // Emparejamos 1 de A con 1 de B
-            let pairs = [];
-            let minLen = Math.min(poolA.length, poolB.length);
-            
-            for(let i=0; i<minLen; i++) {
-                pairs.push([poolA[i], poolB[i]]);
-            }
 
-            // Armamos enfrentamientos entre esas parejas
-            for(let i=0; i < pairs.length - 1; i += 2) {
-                if(pairs[i+1]) {
-                    matches.push({
-                        t1: pairs[i],
-                        t2: pairs[i+1],
-                        s1: null, s2: null
-                    });
+            // Algoritmo: Encontrar todas las combinaciones de 4 jugadores
+            // y armar los equipos más equilibrados según su categoría
+            for (let i = 0; i < players.length; i++) {
+                for (let j = i + 1; j < players.length; j++) {
+                    for (let k = j + 1; k < players.length; k++) {
+                        for (let l = k + 1; l < players.length; l++) {
+                            const group = [players[i], players[j], players[k], players[l]];
+                            
+                            // Ordenamos los 4 por nivel para equilibrar (A+D vs B+C)
+                            // Nota: Cat 5 es mejor que Cat 9, así que ordenamos ascendente
+                            group.sort((a, b) => a.cat - b.cat);
+                            
+                            // Pareja 1: El mejor (A) + El peor (D)
+                            // Pareja 2: Los dos del medio (B) + (C)
+                            matches.push({
+                                t1: [group[0], group[3]],
+                                t2: [group[1], group[2]],
+                                s1: null,
+                                s2: null
+                            });
+                        }
+                    }
                 }
             }
+
+            // Mezclar partidos para que no jueguen siempre los mismos seguidos
+            matches.sort(() => Math.random() - 0.5);
             renderFixture();
         }
 
         function renderFixture() {
-            let html = `<table><tr><th>Pareja 1 (A+B)</th><th>Res.</th><th>Pareja 2 (A+B)</th></tr>`;
-            matches.forEach((m, i) => {
+            const container = document.getElementById('fixtureTable');
+            let html = `<table>
+                <tr><th>Pareja 1 (Promedio)</th><th>S1</th><th>S2</th><th>Pareja 2 (Promedio)</th></tr>`;
+            
+            matches.forEach((m, idx) => {
+                const prom1 = (m.t1[0].cat + m.t1[1].cat) / 2;
+                const prom2 = (m.t2[0].cat + m.t2[1].cat) / 2;
+
                 html += `<tr>
-                    <td>${m.t1[0].name} & ${m.t1[1].name}</td>
                     <td>
-                        <input type="number" class="score-input" onchange="matches[${i}].s1=parseInt(this.value)"> - 
-                        <input type="number" class="score-input" onchange="matches[${i}].s2=parseInt(this.value)">
+                        <div style="font-weight:bold">${m.t1[0].name} & ${m.t1[1].name}</div>
+                        <div style="font-size:0.7rem; color:#6b7280">Prom: ${prom1}</div>
                     </td>
-                    <td>${m.t2[0].name} & ${m.t2[1].name}</td>
+                    <td><input type="number" class="score-input" onchange="updateScore(${idx}, 1, this.value)"></td>
+                    <td><input type="number" class="score-input" onchange="updateScore(${idx}, 2, this.value)"></td>
+                    <td>
+                        <div style="font-weight:bold">${m.t2[0].name} & ${m.t2[1].name}</div>
+                        <div style="font-size:0.7rem; color:#6b7280">Prom: ${prom2}</div>
+                    </td>
                 </tr>`;
             });
-            document.getElementById('matchesTable').innerHTML = html + `</table>`;
+            container.innerHTML = html + `</table>`;
         }
 
-        function showFinalResults() {
+        function updateScore(idx, team, val) {
+            const score = parseInt(val);
+            if (team === 1) matches[idx].s1 = score;
+            else matches[idx].s2 = score;
+        }
+
+        function finalize() {
+            // Reiniciar estadísticas
+            players.forEach(p => { p.wins = 0; p.games = 0; p.played = 0; });
+
             matches.forEach(m => {
-                if(m.s1 === null || m.s2 === null) return;
-                
-                const allInMatch = [...m.t1, ...m.t2];
-                allInMatch.forEach(p => p.played++);
+                if (m.s1 === null || m.s2 === null) return;
+
+                // Sumar partidos jugados y games
+                [...m.t1, ...m.t2].forEach(p => p.played++);
                 m.t1.forEach(p => p.games += m.s1);
                 m.t2.forEach(p => p.games += m.s2);
 
-                if(m.s1 > m.s2) m.t1.forEach(p => p.wins++);
-                else if(m.s2 > m.s1) m.t2.forEach(p => p.wins++);
+                // Sumar victorias
+                if (m.s1 > m.s2) m.t1.forEach(p => p.wins++);
+                else if (m.s2 > m.s1) m.t2.forEach(p => p.wins++);
             });
 
-            const sorted = [...players].sort((a,b) => b.wins - a.wins || (b.wins/b.played) - (a.wins/a.played) || b.games - a.games);
+            const sorted = [...players].sort((a, b) => b.wins - a.wins || (b.wins/b.played) - (a.wins/a.played) || b.games - a.games);
             
             document.getElementById('tournament').classList.add('hidden');
             document.getElementById('results').classList.remove('hidden');
 
-            document.getElementById('rankingList').innerHTML = sorted.map((p, i) => `
+            document.getElementById('rankingGrid').innerHTML = sorted.map((p, i) => `
                 <div class="rank-card">
-                    <strong>#${i+1} ${p.name}</strong> <span class="cat-badge ${p.cat === 'A' ? 'cat-a' : 'cat-b'}">CAT ${p.cat}</span><br>
-                    Partidos Ganados: ${p.wins} | Games: ${p.games} | Eficacia: ${p.played > 0 ? ((p.wins/p.played)*100).toFixed(0) : 0}%
+                    <div class="badge" style="margin-bottom:10px">${i === 0 ? '🏆 LIDER' : 'Posición ' + (i+1)}</div>
+                    <h4 style="margin:5px 0">${p.name}</h4>
+                    <p><small>Cat ${p.cat}°</small></p>
+                    <hr style="border:0; border-top:1px solid #eee; margin:10px 0">
+                    <div style="font-size:0.9rem">
+                        Victorias: <strong>${p.wins}</strong><br>
+                        Eficacia: <strong>${p.played > 0 ? ((p.wins/p.played)*100).toFixed(1) : 0}%</strong><br>
+                        Games Totales: <strong>${p.games}</strong>
+                    </div>
                 </div>
             `).join('');
         }
