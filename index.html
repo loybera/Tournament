@@ -173,26 +173,29 @@
         }
         function removeCourt(i) { courts.splice(i,1); save(); renderCourts(); }
 
-     function generateTournament() {
+   function generateTournament() {
 
     if (players.length < 4 || courts.length < 1)
         return alert("Mínimo 4 jugadores y 1 cancha");
 
     matches = [];
 
-    // Inicialización
-    players.forEach(p => {
+    // =========================
+    // Inicialización jugadores
+    // =========================
+    players.forEach((p, index) => {
+        p.id = index;
         p.matchesPlayed = 0;
         p.lastTurn = -1;
         p.historyPartners = new Set();
         p.historyRivals = new Set();
     });
 
-    // ---------------------------
-    // Timeline (TU LÓGICA ORIGINAL)
-    // ---------------------------
+    // =========================
+    // Construcción timeline
+    // =========================
     let timeline = [];
-    const bloquesPorHora = 3;
+    const bloquesPorHora = 3; // 20 min
 
     courts.forEach(court => {
 
@@ -221,9 +224,9 @@
         a.courtName.localeCompare(b.courtName)
     );
 
-    // ---------------------------
-    // Función principal de búsqueda
-    // ---------------------------
+    // =========================
+    // Buscar match válido
+    // =========================
     function findValidMatch(
         candidates,
         allowRepeatRivals = false,
@@ -236,7 +239,6 @@
                 let a = candidates[i];
                 let b = candidates[j];
 
-                // Siempre forzar 6 + 7
                 if (a.cat === b.cat) continue;
 
                 if (!allowRepeatPartners &&
@@ -282,15 +284,18 @@
         return null;
     }
 
+    // =========================
+    // Registrar partido
+    // =========================
     function registerMatch(t1, t2, time) {
 
-        // Registrar compañeros
+        // compañeros
         t1[0].historyPartners.add(t1[1].id);
         t1[1].historyPartners.add(t1[0].id);
         t2[0].historyPartners.add(t2[1].id);
         t2[1].historyPartners.add(t2[0].id);
 
-        // Registrar rivales
+        // rivales
         for (let a of t1) {
             for (let b of t2) {
                 a.historyRivals.add(b.id);
@@ -304,9 +309,9 @@
         });
     }
 
-    // ---------------------------
-    // Generación de partidos
-    // ---------------------------
+    // =========================
+    // Generación
+    // =========================
     timeline.forEach(slot => {
 
         let ocupadosAhora = new Set();
@@ -324,17 +329,13 @@
 
         if (disponibles.length < 4) return;
 
-        // Prioridad:
-        // 1) Menos partidos
-        // 2) Más espera
+        // Prioridad: menos partidos y más espera
         disponibles.sort((a, b) => {
             if (a.matchesPlayed !== b.matchesPlayed)
                 return a.matchesPlayed - b.matchesPlayed;
-
             return a.lastTurn - b.lastTurn;
         });
 
-        // Igualar cantidad
         let minPlayed =
             Math.min(...players.map(p => p.matchesPlayed));
 
@@ -344,17 +345,51 @@
         let candidatos =
             prioridad.length >= 4 ? prioridad : disponibles;
 
-        // Fase 1: estricta
-        let result =
-            findValidMatch(candidatos, false, false);
+        let result = null;
 
-        // Fase 2: permitir repetir rivales
+        // FASE 1 estricta
+        result = findValidMatch(candidatos, false, false);
+
+        // FASE 2 repetir rivales
         if (!result)
             result = findValidMatch(candidatos, true, false);
 
-        // Fase 3: permitir repetir compañeros
+        // FASE 3 repetir compañeros
         if (!result)
             result = findValidMatch(candidatos, true, true);
+
+        // FASE 4 intentar con todos
+        if (!result)
+            result = findValidMatch(disponibles, true, true);
+
+        // FASE 5 supervivencia total
+        if (!result) {
+            for (let i = 0; i < disponibles.length; i++) {
+                for (let j = i + 1; j < disponibles.length; j++) {
+
+                    if (disponibles[i].cat === disponibles[j].cat) continue;
+
+                    for (let k = 0; k < disponibles.length; k++) {
+                        if (k === i || k === j) continue;
+
+                        for (let l = k + 1; l < disponibles.length; l++) {
+                            if (l === i || l === j) continue;
+
+                            if (disponibles[k].cat === disponibles[l].cat) continue;
+
+                            result = [
+                                [disponibles[i], disponibles[j]],
+                                [disponibles[k], disponibles[l]]
+                            ];
+                            break;
+                        }
+                        if (result) break;
+                    }
+                    if (result) break;
+                }
+                if (result) break;
+            }
+        }
 
         if (!result) return;
 
