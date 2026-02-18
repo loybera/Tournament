@@ -220,7 +220,7 @@ function updateEndTime(i, value) {
         }
         function removeCourt(i) { courts.splice(i,1); save(); renderCourts(); }
 
-  function generateTournament() {
+  function generateTournament(startFromTime = null, appendMode = false) {
 
     console.clear();
     console.log("=== INICIO GENERACIÓN TORNEO ===");
@@ -230,18 +230,34 @@ function updateEndTime(i, value) {
         return alert("Mínimo 4 jugadores y 1 cancha");
     }
 
-    matches = [];
-
+    if (!appendMode) {
+        matches = [];
+    }
+    // =========================
+    // Inicialización jugadores
+    // =========================
     // =========================
     // Inicialización jugadores
     // =========================
     players.forEach((p, index) => {
+    
         p.id = index;
-        p.matchesPlayed = 0;
-        p.lastTurn = -1;
-        p.historyPartners = new Set();
-        p.historyRivals = new Set();
+    
+        if (!appendMode) {
+            // 🔵 Generación desde cero
+            p.matchesPlayed = 0;
+            p.lastTurn = -1;
+            p.historyPartners = new Set();
+            p.historyRivals = new Set();
+        } else {
+            // 🟢 Modo regeneración → NO resetear historial
+            if (!p.historyPartners) p.historyPartners = new Set();
+            if (!p.historyRivals) p.historyRivals = new Set();
+            if (typeof p.matchesPlayed !== "number") p.matchesPlayed = 0;
+            if (typeof p.lastTurn !== "number") p.lastTurn = -1;
+        }
     });
+
 
     console.log("Jugadores:", players.map(p => `${p.name} (${p.cat})`));
 
@@ -374,6 +390,13 @@ function updateEndTime(i, value) {
     // =========================
     timeline.forEach(slot => {
 
+        // 🔥 MODO REGENERACIÓN
+        if (appendMode && startFromTime !== null) {
+            if (slot.timeMins <= startFromTime) {
+                console.log("⏩ Saltando slot ya jugado:", slot.timeStr);
+                return;
+            }
+        }
         console.log("\n--- SLOT", slot.timeStr, slot.courtName, "---");
 
         let ocupadosAhora = new Set();
@@ -507,16 +530,54 @@ function regenerateFutureMatches() {
     if (!confirm("Se recalcularán SOLO los partidos no jugados respetando jugadores que ya se fueron. ¿Continuar?"))
         return;
 
-    // conservar partidos jugados
+    // 1️⃣ Separar partidos jugados y pendientes
     const playedMatches =
         matches.filter(m => m.s1 !== null && m.s2 !== null);
 
-    matches = playedMatches;
+    const pendingMatches =
+        matches.filter(m => m.s1 === null && m.s2 === null);
+
+    if (pendingMatches.length === 0) {
+        alert("No hay partidos pendientes para recalcular.");
+        return;
+    }
+
+    // 2️⃣ Detectar desde qué horario continuar
+    const lastPlayed = playedMatches[playedMatches.length - 1];
+
+    let startFromTime = 0;
+
+    if (lastPlayed) {
+        startFromTime = lastPlayed.timeMins;
+    }
+
+    // 3️⃣ Restaurar solo los jugados
+    matches = [...playedMatches];
+
+    // 4️⃣ Resetear estadísticas SOLO para los pendientes
+    players.forEach(p => {
+        p.matchesPlayed = 0;
+        p.lastTurn = -1;
+    });
+
+    // Recalcular estadísticas de los ya jugados
+    playedMatches.forEach((m, index) => {
+        const allPlayers = [...m.team1, ...m.team2];
+        allPlayers.forEach(p => {
+            const player = players.find(x => x.id === p.id);
+            if (player) {
+                player.matchesPlayed++;
+                player.lastTurn = index;
+            }
+        });
+    });
+
+    // 5️⃣ Generar nuevos partidos SOLO después del último jugado
+    generateTournament(startFromTime, true);
 
     save();
-
-    generateTournament();
 }
+
 
 
 
