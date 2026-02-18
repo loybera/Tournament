@@ -173,14 +173,13 @@
         }
         function removeCourt(i) { courts.splice(i,1); save(); renderCourts(); }
 
-      function generateTournament() {
+     function generateTournament() {
 
     if (players.length < 4 || courts.length < 1)
         return alert("Mínimo 4 jugadores y 1 cancha");
 
     matches = [];
 
-    // Inicialización
     players.forEach(p => {
         p.matchesPlayed = 0;
         p.lastTurn = -1;
@@ -188,9 +187,9 @@
         p.historyRivals = new Set();
     });
 
-    // -------------------------------
-    // Construcción del timeline
-    // -------------------------------
+    // ---------------------------
+    // Timeline (RESPETA TU LÓGICA)
+    // ---------------------------
     let timeline = [];
     const bloquesPorHora = 3;
 
@@ -203,7 +202,11 @@
             timeline.push({
                 timeMins: totalMins,
                 courtName: court.name,
-                timeStr: `${Math.floor(totalMins / 60).toString().padStart(2, '0')}:${(totalMins % 60).toString().padStart(2, '0')}`
+                timeStr: `${Math.floor(totalMins / 60)
+                    .toString()
+                    .padStart(2, '0')}:${(totalMins % 60)
+                    .toString()
+                    .padStart(2, '0')}`
             });
         }
     });
@@ -213,28 +216,22 @@
         a.courtName.localeCompare(b.courtName)
     );
 
-    let rotationCompleted = false;
-
-    // ---------------------------------------
-    // Funciones auxiliares
-    // ---------------------------------------
+    // ---------------------------
+    // VALIDACIONES
+    // ---------------------------
 
     function canBePartners(p1, p2) {
 
-        if (!rotationCompleted) {
+        // No repetir pareja
+        if (p1.historyPartners.has(p2.id)) return false;
 
-            if (p1.historyPartners.has(p2.id)) return false;
-
-            // 5 y 6 no pueden jugar juntos
-            if (p1.cat <= 6 && p2.cat <= 6) return false;
-        }
+        // FORZAR mezcla 6 + 7
+        if (p1.cat === p2.cat) return false;
 
         return true;
     }
 
     function canFace(t1, t2) {
-
-        if (rotationCompleted) return true;
 
         for (let a of t1) {
             for (let b of t2) {
@@ -247,11 +244,13 @@
 
     function registerMatch(t1, t2, time) {
 
+        // Registrar compañeros
         t1[0].historyPartners.add(t1[1].id);
         t1[1].historyPartners.add(t1[0].id);
         t2[0].historyPartners.add(t2[1].id);
         t2[1].historyPartners.add(t2[0].id);
 
+        // Registrar rivales
         for (let a of t1) {
             for (let b of t2) {
                 a.historyRivals.add(b.id);
@@ -297,26 +296,27 @@
         return null;
     }
 
-    // ---------------------------------------
-    // Generación real del fixture
-    // ---------------------------------------
+    // ---------------------------
+    // GENERACIÓN DE PARTIDOS
+    // ---------------------------
 
     timeline.forEach(slot => {
 
-        // jugadores ocupados en ese horario
         let ocupadosAhora = new Set();
 
         matches
             .filter(m => m.sortKey === slot.timeMins)
             .forEach(m => {
-                [...m.t1, ...m.t2].forEach(p => ocupadosAhora.add(p.id));
+                [...m.t1, ...m.t2].forEach(p =>
+                    ocupadosAhora.add(p.id)
+                );
             });
 
         let disponibles = players.filter(p => !ocupadosAhora.has(p.id));
 
         if (disponibles.length < 4) return;
 
-        // Prioridad: menos partidos y más espera
+        // Prioridad: menos partidos y mayor espera
         disponibles.sort((a, b) => {
             if (a.matchesPlayed !== b.matchesPlayed)
                 return a.matchesPlayed - b.matchesPlayed;
@@ -324,19 +324,13 @@
             return a.lastTurn - b.lastTurn;
         });
 
-        // Intentar igualdad máxima
+        // Intentar máxima igualdad
         let minPlayed = Math.min(...players.map(p => p.matchesPlayed));
         let prioridad = disponibles.filter(p => p.matchesPlayed === minPlayed);
 
         let candidatos = prioridad.length >= 4 ? prioridad : disponibles;
 
         let result = findValidMatch(candidatos);
-
-        // Si no hay combinación válida, marcar fin de rotación
-        if (!result && !rotationCompleted) {
-            rotationCompleted = true;
-            result = findValidMatch(disponibles);
-        }
 
         if (!result) return;
 
@@ -353,7 +347,6 @@
             s1: null,
             s2: null
         });
-
     });
 
     matches.sort((a, b) =>
@@ -366,6 +359,7 @@
     save();
     openTab(null, 'fixture');
 }
+
 
         
 
