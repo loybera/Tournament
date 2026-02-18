@@ -3,241 +3,266 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Torneo Pro - Sistema de Gestión</title>
+    <title>Master Tournament Manager</title>
     <style>
-        :root { --primary: #2563eb; --success: #059669; --danger: #dc2626; --bg: #f1f5f9; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; padding: 0; color: #1e293b; }
+        :root { --primary: #1e40af; --secondary: #10b981; --accent: #f59e0b; --bg: #f8fafc; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 0; color: #1e293b; }
         
-        /* Navegación por Solapas */
-        nav { background: #1e293b; display: flex; justify-content: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .tab-btn { background: none; border: none; color: #94a3b8; padding: 15px 20px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.3s; border-bottom: 3px solid transparent; }
-        .tab-btn.active { color: white; border-bottom: 3px solid var(--primary); }
+        nav { background: #1e293b; display: flex; justify-content: center; position: sticky; top: 0; z-index: 100; }
+        .tab-btn { background: none; border: none; color: #94a3b8; padding: 15px 25px; cursor: pointer; font-weight: 600; border-bottom: 3px solid transparent; }
+        .tab-btn.active { color: white; border-bottom: 3px solid var(--secondary); }
 
         .container { max-width: 1000px; margin: 20px auto; padding: 0 15px; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: none; }
-        .card.active { display: block; animation: fadeIn 0.3s ease; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: none; margin-bottom: 20px; }
+        .card.active { display: block; animation: fadeIn 0.3s; }
 
-        /* Estilos de inputs y botones */
-        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
-        input, select { padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; flex: 1; }
-        .btn { padding: 12px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-success { background: var(--success); color: white; width: 100%; margin-top: 10px; }
-        .btn-clear { background: #64748b; color: white; font-size: 0.8rem; }
+        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        input, select, button { padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; }
+        .btn { cursor: pointer; font-weight: bold; border: none; transition: 0.2s; }
+        .btn-main { background: var(--primary); color: white; width: 100%; }
+        .btn-add { background: var(--secondary); color: white; }
 
-        /* Jugadores y Tablas */
-        .player-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f1f5f9; }
-        .cat-tag { font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; background: #e2e8f0; font-weight: bold; }
+        /* Estilos Fixture */
+        .match-card { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px; overflow: hidden; }
+        .match-header { background: #f1f5f9; padding: 10px 15px; display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; border-bottom: 1px solid #e2e8f0; }
+        .match-body { padding: 15px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 15px; }
+        .team { text-align: center; }
+        .score-box { display: flex; gap: 5px; }
+        .score-input { width: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 2px solid var(--primary); }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th { text-align: left; padding: 12px; background: #f8fafc; border-bottom: 2px solid #e2e8f0; font-size: 0.8rem; color: #64748b; }
-        td { padding: 15px 12px; border-bottom: 1px solid #f1f5f9; }
-        .score-input { width: 45px; text-align: center; font-weight: bold; border: 2px solid #cbd5e1; border-radius: 4px; }
+        .badge-cancha { background: #3b82f6; color: white; padding: 2px 8px; border-radius: 4px; }
+        .badge-hora { background: #64748b; color: white; padding: 2px 8px; border-radius: 4px; }
 
-        .ranking-item { display: grid; grid-template-columns: 50px 1fr 100px 100px; padding: 15px; border-bottom: 1px solid #eee; align-items: center; }
-        .pos { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @media (max-width: 600px) { .ranking-item { grid-template-columns: 40px 1fr 60px; font-size: 0.8rem; } .score-input { width: 35px; } }
+        .ranking-row { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f1f5f9; }
+        .rank-num { width: 40px; font-weight: 800; font-size: 1.2rem; color: var(--accent); }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
 
     <nav>
-        <button class="tab-btn active" onclick="openTab(event, 'tab-jugadores')">👥 JUGADORES</button>
-        <button class="tab-btn" onclick="openTab(event, 'tab-fixture')">🎾 FIXTURE</button>
-        <button class="tab-btn" onclick="openTab(event, 'tab-posiciones')">🏆 POSICIONES</button>
+        <button class="tab-btn active" onclick="openTab(event, 'jugadores')">1. JUGADORES</button>
+        <button class="tab-btn" onclick="openTab(event, 'canchas')">2. CANCHAS</button>
+        <button class="tab-btn" onclick="openTab(event, 'fixture')">3. FIXTURE</button>
+        <button class="tab-btn" onclick="openTab(event, 'posiciones')">4. POSICIONES</button>
     </nav>
 
     <div class="container">
         
-        <div id="tab-jugadores" class="card active">
-            <h2>Registro de Participantes</h2>
-            <div class="input-group">
-                <input type="text" id="pName" placeholder="Nombre completo...">
+        <div id="jugadores" class="card active">
+            <h2>Gestión de Jugadores</h2>
+            <div class="grid-inputs">
+                <input type="text" id="pName" placeholder="Nombre...">
                 <select id="pCat">
-                    <option value="5">Cat 5°</option>
-                    <option value="6">Cat 6°</option>
-                    <option value="7">Cat 7°</option>
-                    <option value="8">Cat 8°</option>
+                    <option value="5">Cat 5°</option><option value="6">Cat 6°</option>
+                    <option value="7">Cat 7°</option><option value="8">Cat 8°</option>
                     <option value="9" selected>Cat 9°</option>
                 </select>
-                <button class="btn btn-primary" onclick="addPlayer()">Añadir</button>
+                <button class="btn btn-add" onclick="addPlayer()">Añadir Jugador</button>
             </div>
             <div id="playerList"></div>
-            <button class="btn btn-success" id="genBtn" onclick="generateTournament()">Generar Torneo Americano</button>
-            <button class="btn btn-clear" style="margin-top: 20px; width: 100%;" onclick="clearAllData()">⚠️ Borrar Todo y Reiniciar</button>
         </div>
 
-        <div id="tab-fixture" class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2>Fixture de Partidos</h2>
-                <button class="btn btn-primary" onclick="saveData()">Guardar Progreso</button>
+        <div id="canchas" class="card">
+            <h2>Configuración de Canchas</h2>
+            <p><small>Cada partido dura 20 min. Una reserva de 1 hora permite 3 turnos por cancha.</small></p>
+            <div class="grid-inputs">
+                <input type="text" id="cName" placeholder="Ej: Cancha 1">
+                <input type="time" id="cTime" value="18:00">
+                <button class="btn btn-add" onclick="addCourt()">Añadir Cancha</button>
             </div>
-            <p><small>Cargá los resultados aquí abajo. Los cambios se guardan automáticamente al escribir.</small></p>
+            <div id="courtList"></div>
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+            <button class="btn btn-main" style="background: var(--secondary);" onclick="generateEverything()">Generar Fixture por Rondas</button>
+        </div>
+
+        <div id="fixture" class="card">
+            <h2>Cronograma de Partidos</h2>
             <div id="fixtureContent"></div>
         </div>
 
-        <div id="tab-posiciones" class="card">
-            <h2>Tabla de Posiciones</h2>
+        <div id="posiciones" class="card">
+            <h2>Ranking Individual</h2>
             <div id="rankingContent"></div>
-            <button class="btn btn-success" style="margin-top:20px" onclick="calculateRanking()">Actualizar Ranking</button>
         </div>
 
     </div>
 
     <script>
-        let players = JSON.parse(localStorage.getItem('torneo_players')) || [];
-        let matches = JSON.parse(localStorage.getItem('torneo_matches')) || [];
+        let players = JSON.parse(localStorage.getItem('t_players')) || [];
+        let courts = JSON.parse(localStorage.getItem('t_courts')) || [];
+        let matches = JSON.parse(localStorage.getItem('t_matches')) || [];
 
-        // --- LÓGICA DE SOLAPAS ---
-        function openTab(evt, tabName) {
+        function openTab(evt, name) {
             document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(tabName).classList.add('active');
+            document.getElementById(name).classList.add('active');
             evt.currentTarget.classList.add('active');
-            
-            if(tabName === 'tab-posiciones') calculateRanking();
+            if(name === 'posiciones') calculateRanking();
         }
 
-        // --- LÓGICA DE JUGADORES ---
+        // --- GESTIÓN DE DATOS ---
         function addPlayer() {
             const name = document.getElementById('pName').value.trim();
             const cat = parseInt(document.getElementById('pCat').value);
-            if(!name) return;
-            players.push({ id: Date.now(), name, cat });
-            document.getElementById('pName').value = '';
-            renderPlayers();
-            saveData();
+            if(name) {
+                players.push({ id: Date.now(), name, cat });
+                save(); renderPlayers();
+                document.getElementById('pName').value = '';
+            }
         }
 
-        function removePlayer(id) {
-            players = players.filter(p => p.id !== id);
-            renderPlayers();
-            saveData();
+        function addCourt() {
+            const name = document.getElementById('cName').value.trim();
+            const time = document.getElementById('cTime').value;
+            if(name && time) {
+                courts.push({ id: Date.now(), name, startTime: time });
+                save(); renderCourts();
+            }
         }
 
         function renderPlayers() {
-            const list = document.getElementById('playerList');
-            list.innerHTML = players.map(p => `
-                <div class="player-row">
-                    <span><strong>${p.name}</strong> <span class="cat-tag">Cat ${p.cat}°</span></span>
-                    <button onclick="removePlayer(${p.id})" style="color:var(--danger); background:none; border:none; cursor:pointer">Eliminar</button>
+            document.getElementById('playerList').innerHTML = players.map(p => `
+                <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #eee">
+                    <span>${p.name} <strong>(Cat ${p.cat})</strong></span>
+                    <button onclick="remove('players', ${p.id})" style="color:red; border:none; background:none; cursor:pointer">Eliminar</button>
                 </div>
             `).join('');
-            document.getElementById('genBtn').style.display = players.length >= 4 ? 'block' : 'none';
         }
 
-        // --- LÓGICA DE FIXTURE (TODOS CONTRA TODOS EQUILIBRADO) ---
-        function generateTournament() {
-            if(players.length < 4) return alert("Mínimo 4 jugadores");
-            matches = [];
+        function renderCourts() {
+            document.getElementById('courtList').innerHTML = courts.map(c => `
+                <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #eee">
+                    <span><span class="badge-cancha">${c.name}</span> Inicia: <strong>${c.startTime} hs</strong></span>
+                    <button onclick="remove('courts', ${c.id})" style="color:red; border:none; background:none; cursor:pointer">Eliminar</button>
+                </div>
+            `).join('');
+        }
+
+        function remove(type, id) {
+            if(type === 'players') players = players.filter(p => p.id !== id);
+            if(type === 'courts') courts = courts.filter(c => c.id !== id);
+            save(); renderPlayers(); renderCourts();
+        }
+
+        // --- ALGORITMO DE DISTRIBUCIÓN ---
+        function generateEverything() {
+            if(players.length < 4 || courts.length < 1) return alert("Faltan jugadores o canchas");
             
-            // Generamos combinaciones únicas de 4 jugadores
-            for (let i = 0; i < players.length; i++) {
-                for (let j = i + 1; j < players.length; j++) {
-                    for (let k = j + 1; k < players.length; k++) {
-                        for (let l = k + 1; l < players.length; l++) {
-                            const group = [players[i], players[j], players[k], players[l]];
-                            group.sort((a,b) => a.cat - b.cat); // 5 es mejor que 9
-                            // Parejas: Mejor+Peor vs Medios
-                            matches.push({
-                                t1: [group[0].id, group[3].id],
-                                t2: [group[1].id, group[2].id],
-                                s1: null, s2: null
-                            });
-                        }
-                    }
+            matches = [];
+            let allPairs = [];
+            
+            // 1. Generar todas las parejas equilibradas posibles (A+B)
+            // Para simplificar y asegurar que todos jueguen, usamos combinaciones directas
+            for(let i=0; i<players.length; i++) {
+                for(let j=i+1; j<players.length; j++) {
+                    allPairs.push([players[i], players[j]]);
                 }
             }
-            matches.sort(() => Math.random() - 0.5);
-            saveData();
+            allPairs.sort(() => Math.random() - 0.5);
+
+            // 2. Organizar por Turnos de 20 minutos
+            let matchCounter = 1;
+            let currentTurn = 0; // Turno 0: 0-20min, Turno 1: 20-40min, Turno 2: 40-60min
+            
+            // Limitamos a 3 turnos por cancha (1 hora de reserva total)
+            for(let t = 0; t < 3; t++) {
+                courts.forEach(court => {
+                    if(allPairs.length >= 2) {
+                        const p1 = allPairs.shift();
+                        const p2 = allPairs.shift();
+
+                        // Calcular hora exacta
+                        let [h, m] = court.startTime.split(':').map(Number);
+                        let totalMinutes = h * 60 + m + (t * 20);
+                        let matchTime = `${Math.floor(totalMinutes/60)}:${(totalMinutes%60).toString().padStart(2, '0')}`;
+
+                        matches.push({
+                            id: matchCounter++,
+                            court: court.name,
+                            time: matchTime,
+                            round: t + 1,
+                            t1: [p1[0].id, p1[1].id],
+                            t2: [p2[0].id, p2[1].id],
+                            s1: null, s2: null
+                        });
+                    }
+                });
+            }
+            save();
             renderFixture();
-            alert("¡Fixture generado! Pasá a la solapa de FIXTURE.");
+            openTab(null, 'fixture');
         }
 
         function renderFixture() {
             const container = document.getElementById('fixtureContent');
-            if(matches.length === 0) {
-                container.innerHTML = "<p>Aún no hay partidos. Agregá jugadores y generá el torneo.</p>";
-                return;
-            }
+            container.innerHTML = matches.map((m, idx) => {
+                const p1 = players.find(x => x.id === m.t1[0]);
+                const p2 = players.find(x => x.id === m.t1[1]);
+                const p3 = players.find(x => x.id === m.t2[0]);
+                const p4 = players.find(x => x.id === m.t2[1]);
 
-            let html = `<table><tr><th>Pareja 1</th><th>Res.</th><th>Pareja 2</th></tr>`;
-            matches.forEach((m, idx) => {
-                const p1a = players.find(p => p.id === m.t1[0])?.name || '---';
-                const p1b = players.find(p => p.id === m.t1[1])?.name || '---';
-                const p2a = players.find(p => p.id === m.t2[0])?.name || '---';
-                const p2b = players.find(p => p.id === m.t2[1])?.name || '---';
-
-                html += `<tr>
-                    <td>${p1a}<br>${p1b}</td>
-                    <td>
-                        <input type="number" class="score-input" value="${m.s1 !== null ? m.s1 : ''}" onchange="updateMatch(${idx}, 1, this.value)">
-                        <input type="number" class="score-input" value="${m.s2 !== null ? m.s2 : ''}" onchange="updateMatch(${idx}, 2, this.value)">
-                    </td>
-                    <td>${p2a}<br>${p2b}</td>
-                </tr>`;
-            });
-            container.innerHTML = html + `</table>`;
+                return `
+                <div class="match-card">
+                    <div class="match-header">
+                        <span>PARTIDO #${m.id} - RONDA ${m.round}</span>
+                        <span><span class="badge-cancha">${m.court}</span> <span class="badge-hora">${m.time} hs</span></span>
+                    </div>
+                    <div class="match-body">
+                        <div class="team">${p1.name}<br>${p2.name}</div>
+                        <div class="score-box">
+                            <input type="number" class="score-input" value="${m.s1??''}" onchange="updateScore(${idx}, 1, this.value)">
+                            <input type="number" class="score-input" value="${m.s2??''}" onchange="updateScore(${idx}, 2, this.value)">
+                        </div>
+                        <div class="team">${p3.name}<br>${p4.name}</div>
+                    </div>
+                </div>
+                `;
+            }).join('');
         }
 
-        function updateMatch(idx, team, val) {
-            const n = val === "" ? null : parseInt(val);
-            if(team === 1) matches[idx].s1 = n;
-            else matches[idx].s2 = n;
-            saveData();
+        function updateScore(idx, team, val) {
+            const s = val === "" ? null : parseInt(val);
+            if(team === 1) matches[idx].s1 = s; else matches[idx].s2 = s;
+            save();
         }
 
-        // --- LÓGICA DE RANKING ---
         function calculateRanking() {
-            const stats = {};
-            players.forEach(p => stats[p.id] = { name: p.name, cat: p.cat, wins: 0, played: 0, games: 0 });
+            const s = {};
+            players.forEach(p => s[p.id] = { name: p.name, wins: 0, games: 0, played: 0 });
 
             matches.forEach(m => {
                 if(m.s1 === null || m.s2 === null) return;
-                
-                // Jugados y games
-                [m.t1[0], m.t1[1], m.t2[0], m.t2[1]].forEach(id => { if(stats[id]) stats[id].played++; });
-                stats[m.t1[0]].games += m.s1; stats[m.t1[1]].games += m.s1;
-                stats[m.t2[0]].games += m.s2; stats[m.t2[1]].games += m.s2;
-
-                // Victorias
-                if(m.s1 > m.s2) { stats[m.t1[0]].wins++; stats[m.t1[1]].wins++; }
-                else if(m.s2 > m.s1) { stats[m.t2[0]].wins++; stats[m.t2[1]].wins++; }
+                [...m.t1, ...m.t2].forEach(id => { if(s[id]) s[id].played++; });
+                m.t1.forEach(id => s[id].games += m.s1);
+                m.t2.forEach(id => s[id].games += m.s2);
+                if(m.s1 > m.s2) m.t1.forEach(id => s[id].wins++);
+                else if(m.s2 > m.s1) m.t2.forEach(id => s[id].wins++);
             });
 
-            const sorted = Object.values(stats).sort((a,b) => b.wins - a.wins || (b.wins/b.played) - (a.wins/a.played) || b.games - a.games);
+            const sorted = Object.values(s).sort((a,b) => b.wins - a.wins || (b.wins/b.played) - (a.wins/a.played) || b.games - a.games);
             
-            const container = document.getElementById('rankingContent');
-            container.innerHTML = `<div class="ranking-item" style="font-weight:bold; color:#64748b">
-                <div>Pos</div><div>Jugador</div><div>Wins</div><div>Games</div>
-            </div>` + sorted.map((p, i) => `
-                <div class="ranking-item">
-                    <div class="pos">${i+1}</div>
-                    <div><strong>${p.name}</strong><br><span class="cat-tag">Cat ${p.cat}°</span></div>
-                    <div>${p.wins}</div>
-                    <div style="color:var(--success); font-weight:bold">${p.games}</div>
+            document.getElementById('rankingContent').innerHTML = sorted.map((p, i) => `
+                <div class="ranking-row">
+                    <div class="rank-num">${i+1}</div>
+                    <div style="flex:1"><strong>${p.name}</strong></div>
+                    <div style="text-align:right">
+                        <span style="color:var(--secondary)">${p.wins} G</span> | 
+                        <span style="color:var(--primary)">${p.games} pts</span>
+                    </div>
                 </div>
             `).join('');
         }
 
-        // --- PERSISTENCIA ---
-        function saveData() {
-            localStorage.setItem('torneo_players', JSON.stringify(players));
-            localStorage.setItem('torneo_matches', JSON.stringify(matches));
+        function save() {
+            localStorage.setItem('t_players', JSON.stringify(players));
+            localStorage.setItem('t_courts', JSON.stringify(courts));
+            localStorage.setItem('t_matches', JSON.stringify(matches));
         }
 
-        function clearAllData() {
-            if(confirm("¿Estás seguro? Se borrarán todos los jugadores y resultados.")){
-                localStorage.clear();
-                location.reload();
-            }
-        }
-
-        // Inicialización
-        renderPlayers();
-        renderFixture();
+        // Init
+        renderPlayers(); renderCourts(); renderFixture();
     </script>
 </body>
 </html>
