@@ -3,193 +3,205 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Tournament Manager</title>
+    <title>Torneo Pro - Control Total</title>
     <style>
-        :root { --primary: #1e40af; --secondary: #10b981; --accent: #f59e0b; --bg: #f8fafc; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 0; color: #1e293b; }
+        :root { --primary: #1e40af; --secondary: #10b981; --accent: #f59e0b; --bg: #f1f5f9; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; color: #1e293b; padding-bottom: 50px; }
         
-        nav { background: #1e293b; display: flex; justify-content: center; position: sticky; top: 0; z-index: 100; }
-        .tab-btn { background: none; border: none; color: #94a3b8; padding: 15px 25px; cursor: pointer; font-weight: 600; border-bottom: 3px solid transparent; }
+        nav { background: #1e293b; display: flex; justify-content: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .tab-btn { background: none; border: none; color: #94a3b8; padding: 15px 15px; cursor: pointer; font-weight: 600; font-size: 0.8rem; border-bottom: 3px solid transparent; }
         .tab-btn.active { color: white; border-bottom: 3px solid var(--secondary); }
 
-        .container { max-width: 1000px; margin: 20px auto; padding: 0 15px; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: none; margin-bottom: 20px; }
-        .card.active { display: block; animation: fadeIn 0.3s; }
+        .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: none; }
+        .card.active { display: block; }
 
-        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        input, select, button { padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; }
-        .btn { cursor: pointer; font-weight: bold; border: none; transition: 0.2s; }
-        .btn-main { background: var(--primary); color: white; width: 100%; }
-        .btn-add { background: var(--secondary); color: white; }
-
-        /* Estilos Fixture */
-        .match-card { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px; overflow: hidden; }
-        .match-header { background: #f1f5f9; padding: 10px 15px; display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; border-bottom: 1px solid #e2e8f0; }
-        .match-body { padding: 15px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 15px; }
-        .team { text-align: center; }
-        .score-box { display: flex; gap: 5px; }
-        .score-input { width: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 2px solid var(--primary); }
+        textarea { width: 100%; height: 120px; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-family: monospace; box-sizing: border-box; }
+        .grid-inputs { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; margin-bottom: 15px; }
+        input, select, button { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; }
         
-        .badge-cancha { background: #3b82f6; color: white; padding: 2px 8px; border-radius: 4px; }
-        .badge-hora { background: #64748b; color: white; padding: 2px 8px; border-radius: 4px; }
-
-        .ranking-row { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f1f5f9; }
-        .rank-num { width: 40px; font-weight: 800; font-size: 1.2rem; color: var(--accent); }
+        .btn { cursor: pointer; font-weight: bold; border: none; padding: 10px 20px; border-radius: 8px; }
+        .btn-add { background: var(--primary); color: white; }
+        .btn-gen { background: var(--secondary); color: white; width: 100%; font-size: 1.1rem; margin-top: 20px; }
         
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* Fixture */
+        .match-card { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px; background: white; }
+        .match-header { background: #f8fafc; padding: 8px 15px; display: flex; justify-content: space-between; font-size: 0.8rem; border-bottom: 1px solid #e2e8f0; font-weight: bold; }
+        .match-body { padding: 15px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; text-align: center; }
+        .score-input { width: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 2px solid #3b82f6; border-radius: 4px; }
+        
+        .badge { padding: 2px 6px; border-radius: 4px; color: white; font-size: 0.7rem; }
+        .bg-cancha { background: #3b82f6; }
+        .bg-hora { background: #64748b; }
+
+        .player-list-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
     </style>
 </head>
 <body>
 
     <nav>
-        <button class="tab-btn active" onclick="openTab(event, 'jugadores')">1. JUGADORES</button>
-        <button class="tab-btn" onclick="openTab(event, 'canchas')">2. CANCHAS</button>
-        <button class="tab-btn" onclick="openTab(event, 'fixture')">3. FIXTURE</button>
-        <button class="tab-btn" onclick="openTab(event, 'posiciones')">4. POSICIONES</button>
+        <button class="tab-btn active" onclick="openTab(event, 'jugadores')">JUGADORES</button>
+        <button class="tab-btn" onclick="openTab(event, 'canchas')">CANCHAS</button>
+        <button class="tab-btn" onclick="openTab(event, 'fixture')">FIXTURE</button>
+        <button class="tab-btn" onclick="openTab(event, 'posiciones')">POSICIONES</button>
     </nav>
 
     <div class="container">
         
         <div id="jugadores" class="card active">
-            <h2>Gestión de Jugadores</h2>
-            <div class="grid-inputs">
-                <input type="text" id="pName" placeholder="Nombre...">
-                <select id="pCat">
-                    <option value="5">Cat 5°</option><option value="6">Cat 6°</option>
-                    <option value="7">Cat 7°</option><option value="8">Cat 8°</option>
-                    <option value="9" selected>Cat 9°</option>
-                </select>
-                <button class="btn btn-add" onclick="addPlayer()">Añadir Jugador</button>
-            </div>
+            <h3>Carga Masiva de Jugadores</h3>
+            <p><small>Pegá una lista: <code>Nombre, Categoría</code> (uno por fila)</small></p>
+            <textarea id="bulkPlayers" placeholder="Juan Perez, 7&#10;Maria Garcia, 6&#10;Pedro Lopez, 8"></textarea>
+            <button class="btn btn-add" style="width:100%; margin-top:10px" onclick="importPlayers()">Importar Lista</button>
+            
+            <h4 style="margin-top:20px">Jugadores Registrados: <span id="pCount">0</span></h4>
             <div id="playerList"></div>
         </div>
 
         <div id="canchas" class="card">
-            <h2>Configuración de Canchas</h2>
-            <p><small>Cada partido dura 20 min. Una reserva de 1 hora permite 3 turnos por cancha.</small></p>
+            <h3>Configuración de Canchas</h3>
             <div class="grid-inputs">
-                <input type="text" id="cName" placeholder="Ej: Cancha 1">
+                <input type="text" id="cName" placeholder="Nombre Cancha">
                 <input type="time" id="cTime" value="18:00">
-                <button class="btn btn-add" onclick="addCourt()">Añadir Cancha</button>
+                <button class="btn btn-add" onclick="addCourt()">Añadir</button>
             </div>
             <div id="courtList"></div>
-            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
-            <button class="btn btn-main" style="background: var(--secondary);" onclick="generateEverything()">Generar Fixture por Rondas</button>
+            
+            <button class="btn btn-gen" onclick="generateTournament()">GENERAR FIXTURE ORDENADO</button>
+            <button class="btn" style="background:#94a3b8; color:white; width:100%; margin-top:10px" onclick="resetAll()">Borrar Todo</button>
         </div>
 
         <div id="fixture" class="card">
-            <h2>Cronograma de Partidos</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center">
+                <h3>Cronograma Oficial</h3>
+                <button class="btn btn-add" style="font-size:0.7rem" onclick="renderFixture()">Refrescar</button>
+            </div>
             <div id="fixtureContent"></div>
         </div>
 
         <div id="posiciones" class="card">
-            <h2>Ranking Individual</h2>
+            <h3>Ranking</h3>
             <div id="rankingContent"></div>
         </div>
 
     </div>
 
     <script>
-        let players = JSON.parse(localStorage.getItem('t_players')) || [];
-        let courts = JSON.parse(localStorage.getItem('t_courts')) || [];
-        let matches = JSON.parse(localStorage.getItem('t_matches')) || [];
+        let players = JSON.parse(localStorage.getItem('tp_p')) || [];
+        let courts = JSON.parse(localStorage.getItem('tp_c')) || [];
+        let matches = JSON.parse(localStorage.getItem('tp_m')) || [];
 
         function openTab(evt, name) {
             document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(name).classList.add('active');
-            evt.currentTarget.classList.add('active');
+            if(evt) evt.currentTarget.classList.add('active');
             if(name === 'posiciones') calculateRanking();
         }
 
-        // --- GESTIÓN DE DATOS ---
-        function addPlayer() {
-            const name = document.getElementById('pName').value.trim();
-            const cat = parseInt(document.getElementById('pCat').value);
-            if(name) {
-                players.push({ id: Date.now(), name, cat });
-                save(); renderPlayers();
-                document.getElementById('pName').value = '';
-            }
+        // --- CARGA DE JUGADORES ---
+        function importPlayers() {
+            const text = document.getElementById('bulkPlayers').value;
+            const lines = text.split('\n');
+            lines.forEach(line => {
+                const parts = line.split(',');
+                if(parts.length >= 2) {
+                    const name = parts[0].trim();
+                    const cat = parseInt(parts[1].trim());
+                    if(name && !isNaN(cat)) {
+                        players.push({ id: Date.now() + Math.random(), name, cat });
+                    }
+                }
+            });
+            document.getElementById('bulkPlayers').value = '';
+            save(); renderPlayers();
         }
 
+        function renderPlayers() {
+            document.getElementById('pCount').innerText = players.length;
+            document.getElementById('playerList').innerHTML = players.map((p, i) => `
+                <div class="player-list-item">
+                    <span>${p.name} <strong>(Cat ${p.cat}°)</strong></span>
+                    <button onclick="removePlayer(${i})" style="color:red; background:none; border:none; cursor:pointer">✕</button>
+                </div>
+            `).join('');
+        }
+        function removePlayer(i) { players.splice(i,1); save(); renderPlayers(); }
+
+        // --- CANCHAS ---
         function addCourt() {
-            const name = document.getElementById('cName').value.trim();
+            const name = document.getElementById('cName').value;
             const time = document.getElementById('cTime').value;
             if(name && time) {
                 courts.push({ id: Date.now(), name, startTime: time });
                 save(); renderCourts();
             }
         }
-
-        function renderPlayers() {
-            document.getElementById('playerList').innerHTML = players.map(p => `
-                <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #eee">
-                    <span>${p.name} <strong>(Cat ${p.cat})</strong></span>
-                    <button onclick="remove('players', ${p.id})" style="color:red; border:none; background:none; cursor:pointer">Eliminar</button>
-                </div>
-            `).join('');
-        }
-
         function renderCourts() {
-            document.getElementById('courtList').innerHTML = courts.map(c => `
-                <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #eee">
-                    <span><span class="badge-cancha">${c.name}</span> Inicia: <strong>${c.startTime} hs</strong></span>
-                    <button onclick="remove('courts', ${c.id})" style="color:red; border:none; background:none; cursor:pointer">Eliminar</button>
+            document.getElementById('courtList').innerHTML = courts.map((c, i) => `
+                <div class="player-list-item">
+                    <span><span class="badge bg-cancha">${c.name}</span> Inicio: ${c.startTime} hs</span>
+                    <button onclick="removeCourt(${i})" style="color:red; background:none; border:none; cursor:pointer">✕</button>
                 </div>
             `).join('');
         }
+        function removeCourt(i) { courts.splice(i,1); save(); renderCourts(); }
 
-        function remove(type, id) {
-            if(type === 'players') players = players.filter(p => p.id !== id);
-            if(type === 'courts') courts = courts.filter(c => c.id !== id);
-            save(); renderPlayers(); renderCourts();
-        }
-
-        // --- ALGORITMO DE DISTRIBUCIÓN ---
-        function generateEverything() {
-            if(players.length < 4 || courts.length < 1) return alert("Faltan jugadores o canchas");
+        // --- GENERACIÓN DEL FIXTURE ORDENADO ---
+        function generateTournament() {
+            if(players.length < 4 || courts.length < 1) return alert("Faltan datos");
             
             matches = [];
-            let allPairs = [];
+            let poolA = players.filter(p => p.cat <= 7).sort(() => Math.random() - 0.5);
+            let poolB = players.filter(p => p.cat > 7).sort(() => Math.random() - 0.5);
             
-            // 1. Generar todas las parejas equilibradas posibles (A+B)
-            // Para simplificar y asegurar que todos jueguen, usamos combinaciones directas
-            for(let i=0; i<players.length; i++) {
-                for(let j=i+1; j<players.length; j++) {
-                    allPairs.push([players[i], players[j]]);
-                }
+            // Si no hay categorías mezcladas, usamos todos
+            if(poolA.length < 2 || poolB.length < 2) {
+                poolA = [...players].sort(() => Math.random() - 0.5);
+                poolB = [];
             }
-            allPairs.sort(() => Math.random() - 0.5);
 
-            // 2. Organizar por Turnos de 20 minutos
-            let matchCounter = 1;
-            let currentTurn = 0; // Turno 0: 0-20min, Turno 1: 20-40min, Turno 2: 40-60min
-            
-            // Limitamos a 3 turnos por cancha (1 hora de reserva total)
-            for(let t = 0; t < 3; t++) {
+            let turns = [0, 1, 2]; // 3 turnos de 20 min para completar la hora
+            let matchIdx = 1;
+
+            // Creamos los bloques de tiempo primero para asegurar el orden
+            turns.forEach(tIdx => {
                 courts.forEach(court => {
-                    if(allPairs.length >= 2) {
-                        const p1 = allPairs.shift();
-                        const p2 = allPairs.shift();
+                    // Seleccionar 4 jugadores disponibles para este turno
+                    // Algoritmo simplificado para asegurar que haya partidos:
+                    let p = [];
+                    for(let i=0; i<4; i++) {
+                        if(players.length > 0) {
+                            let randomIdx = Math.floor(Math.random() * players.length);
+                            p.push(players[randomIdx]);
+                        }
+                    }
 
-                        // Calcular hora exacta
+                    if(p.length === 4) {
+                        // Calcular tiempo
                         let [h, m] = court.startTime.split(':').map(Number);
-                        let totalMinutes = h * 60 + m + (t * 20);
-                        let matchTime = `${Math.floor(totalMinutes/60)}:${(totalMinutes%60).toString().padStart(2, '0')}`;
+                        let totalMins = h * 60 + m + (tIdx * 20);
+                        let timeStr = `${Math.floor(totalMins/60)}:${(totalMins%60).toString().padStart(2, '0')}`;
 
                         matches.push({
-                            id: matchCounter++,
+                            id: 0, // Se asignará después del ordenamiento
+                            sortKey: totalMins, // Clave para ordenar
+                            time: timeStr,
                             court: court.name,
-                            time: matchTime,
-                            round: t + 1,
-                            t1: [p1[0].id, p1[1].id],
-                            t2: [p2[0].id, p2[1].id],
+                            t1: [p[0], p[3]], // Equilibrado (A+D)
+                            t2: [p[1], p[2]], // Equilibrado (B+C)
                             s1: null, s2: null
                         });
                     }
                 });
-            }
+            });
+
+            // ORDENAR POR TIEMPO Y LUEGO POR CANCHA
+            matches.sort((a, b) => a.sortKey - b.sortKey || a.court.localeCompare(b.court));
+            
+            // Asignar ID correlativo después de ordenar
+            matches.forEach((m, idx) => m.id = idx + 1);
+
             save();
             renderFixture();
             openTab(null, 'fixture');
@@ -197,71 +209,59 @@
 
         function renderFixture() {
             const container = document.getElementById('fixtureContent');
-            container.innerHTML = matches.map((m, idx) => {
-                const p1 = players.find(x => x.id === m.t1[0]);
-                const p2 = players.find(x => x.id === m.t1[1]);
-                const p3 = players.find(x => x.id === m.t2[0]);
-                const p4 = players.find(x => x.id === m.t2[1]);
-
-                return `
+            container.innerHTML = matches.map((m, idx) => `
                 <div class="match-card">
                     <div class="match-header">
-                        <span>PARTIDO #${m.id} - RONDA ${m.round}</span>
-                        <span><span class="badge-cancha">${m.court}</span> <span class="badge-hora">${m.time} hs</span></span>
+                        <span>PARTIDO #${m.id}</span>
+                        <span><span class="badge bg-hora">${m.time} HS</span> <span class="badge bg-cancha">${m.court}</span></span>
                     </div>
                     <div class="match-body">
-                        <div class="team">${p1.name}<br>${p2.name}</div>
+                        <div>${m.t1[0].name}<br>${m.t1[1].name}</div>
                         <div class="score-box">
-                            <input type="number" class="score-input" value="${m.s1??''}" onchange="updateScore(${idx}, 1, this.value)">
-                            <input type="number" class="score-input" value="${m.s2??''}" onchange="updateScore(${idx}, 2, this.value)">
+                            <input type="number" class="score-input" value="${m.s1??''}" onchange="updateS(${idx}, 1, this.value)">
+                            <input type="number" class="score-input" value="${m.s2??''}" onchange="updateS(${idx}, 2, this.value)">
                         </div>
-                        <div class="team">${p3.name}<br>${p4.name}</div>
-                    </div>
-                </div>
-                `;
-            }).join('');
-        }
-
-        function updateScore(idx, team, val) {
-            const s = val === "" ? null : parseInt(val);
-            if(team === 1) matches[idx].s1 = s; else matches[idx].s2 = s;
-            save();
-        }
-
-        function calculateRanking() {
-            const s = {};
-            players.forEach(p => s[p.id] = { name: p.name, wins: 0, games: 0, played: 0 });
-
-            matches.forEach(m => {
-                if(m.s1 === null || m.s2 === null) return;
-                [...m.t1, ...m.t2].forEach(id => { if(s[id]) s[id].played++; });
-                m.t1.forEach(id => s[id].games += m.s1);
-                m.t2.forEach(id => s[id].games += m.s2);
-                if(m.s1 > m.s2) m.t1.forEach(id => s[id].wins++);
-                else if(m.s2 > m.s1) m.t2.forEach(id => s[id].wins++);
-            });
-
-            const sorted = Object.values(s).sort((a,b) => b.wins - a.wins || (b.wins/b.played) - (a.wins/a.played) || b.games - a.games);
-            
-            document.getElementById('rankingContent').innerHTML = sorted.map((p, i) => `
-                <div class="ranking-row">
-                    <div class="rank-num">${i+1}</div>
-                    <div style="flex:1"><strong>${p.name}</strong></div>
-                    <div style="text-align:right">
-                        <span style="color:var(--secondary)">${p.wins} G</span> | 
-                        <span style="color:var(--primary)">${p.games} pts</span>
+                        <div>${m.t2[0].name}<br>${m.t2[1].name}</div>
                     </div>
                 </div>
             `).join('');
         }
 
-        function save() {
-            localStorage.setItem('t_players', JSON.stringify(players));
-            localStorage.setItem('t_courts', JSON.stringify(courts));
-            localStorage.setItem('t_matches', JSON.stringify(matches));
+        function updateS(idx, team, val) {
+            const v = val === "" ? null : parseInt(val);
+            if(team === 1) matches[idx].s1 = v; else matches[idx].s2 = v;
+            save();
         }
 
-        // Init
+        function calculateRanking() {
+            let s = {};
+            players.forEach(p => s[p.id] = { name: p.name, wins: 0, games: 0, played: 0 });
+            matches.forEach(m => {
+                if(m.s1 === null || m.s2 === null) return;
+                [...m.t1, ...m.t2].forEach(p => { if(s[p.id]) s[p.id].played++; });
+                m.t1.forEach(p => s[p.id].games += m.s1);
+                m.t2.forEach(p => s[p.id].games += m.s2);
+                if(m.s1 > m.s2) m.t1.forEach(p => s[p.id].wins++);
+                else if(m.s2 > m.s1) m.t2.forEach(p => s[p.id].wins++);
+            });
+            const sorted = Object.values(s).sort((a,b) => b.wins - a.wins || (b.wins/b.played) - (a.wins/a.played) || b.games - a.games);
+            document.getElementById('rankingContent').innerHTML = sorted.map((p, i) => `
+                <div class="player-list-item">
+                    <span><strong>${i+1}. ${p.name}</strong></span>
+                    <span>${p.wins} PG | ${p.games} Games</span>
+                </div>
+            `).join('');
+        }
+
+        function save() {
+            localStorage.setItem('tp_p', JSON.stringify(players));
+            localStorage.setItem('tp_c', JSON.stringify(courts));
+            localStorage.setItem('tp_m', JSON.stringify(matches));
+        }
+
+        function resetAll() { if(confirm("¿Borrar todo?")) { localStorage.clear(); location.reload(); } }
+
+        // Inicializar
         renderPlayers(); renderCourts(); renderFixture();
     </script>
 </body>
