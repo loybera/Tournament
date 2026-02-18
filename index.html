@@ -173,19 +173,20 @@
         }
         function removeCourt(i) { courts.splice(i,1); save(); renderCourts(); }
 
-       function generateTournament() {
+      function generateTournament() {
     if (players.length < 4 || courts.length < 1) return alert("Mínimo 4 jugadores y 1 cancha");
     
     matches = [];
     // Resetear historial para sorteo limpio
     players.forEach(p => { 
         p.matchesPlayed = 0; 
-        p.lastTurn = -1; 
+        p.lastTurn = -1;
+        p.historyPartners = []; // Nuevo: para no repetir compañeros
     });
 
-    // 1. Crear todos los "slots" de tiempo/cancha disponibles
+    // 1. Crear línea de tiempo global (Cronograma de slots)
     let timeline = [];
-    const bloquesPorHora = 3; // 3 bloques de 20 min
+    const bloquesPorHora = 3; 
 
     courts.forEach(court => {
         let [h, m] = court.startTime.split(':').map(Number);
@@ -199,12 +200,12 @@
         }
     });
 
-    // 2. Ordenar cronológicamente (Importante: 18:00 Cancha 1, 18:00 Cancha 2, 18:20 Cancha 1...)
+    // Ordenar slots por hora (para repartir jugadores en todas las canchas simultáneamente)
     timeline.sort((a, b) => a.timeMins - b.timeMins || a.courtName.localeCompare(b.courtName));
 
-    // 3. Asignar jugadores siguiendo la cola de espera
+    // 2. Asignación de Jugadores
     timeline.forEach(slot => {
-        // En cada slot de tiempo, buscamos quiénes NO están jugando YA en ese mismo minuto
+        // Jugadores ocupados en este mismo horario exacto
         let ocupadosAhora = new Set();
         matches.filter(m => m.sortKey === slot.timeMins).forEach(m => {
             [...m.t1, ...m.t2].forEach(p => ocupadosAhora.add(p.id));
@@ -213,21 +214,39 @@
         let disponibles = players.filter(p => !ocupadosAhora.has(p.id));
 
         if (disponibles.length >= 4) {
-            // PRIORIDAD GLOBAL: El que menos partidos tiene en el torneo total entra primero
+            // PRIORIDAD: Los que menos jugaron y más esperaron
             disponibles.sort((a, b) => {
                 if (a.matchesPlayed !== b.matchesPlayed) return a.matchesPlayed - b.matchesPlayed;
-                return a.lastTurn - b.lastTurn; // El que espera hace más tiempo
+                return a.lastTurn - b.lastTurn;
             });
 
-            let seleccionados = disponibles.slice(0, 4);
+            let sel = disponibles.slice(0, 4);
 
-            // Equilibrar nivel entre los 4 seleccionados
-            seleccionados.sort((a, b) => a.cat - b.cat);
-            let t1 = [seleccionados[0], seleccionados[3]]; // Mejor + Peor
-            let t2 = [seleccionados[1], seleccionados[2]]; // Los dos del medio
+            // Intentar armar parejas que NO hayan jugado juntas antes
+            // Ordenamos por nivel para tener una base
+            sel.sort((a, b) => a.cat - b.cat);
 
-            // Actualizar historial del jugador
-            seleccionados.forEach(p => {
+            let t1, t2;
+            
+            // Lógica de no repetir equipos: 
+            // Probamos la combinación ideal (1+4 vs 2+3). 
+            // Si 1 y 4 ya jugaron juntos, probamos (1+3 vs 2+4).
+            if (sel[0].historyPartners.includes(sel[3].id)) {
+                t1 = [sel[0], sel[2]];
+                t2 = [sel[1], sel[3]];
+            } else {
+                t1 = [sel[0], sel[3]];
+                t2 = [sel[1], sel[2]];
+            }
+
+            // Registrar en el historial de los jugadores
+            t1[0].historyPartners.push(t1[1].id);
+            t1[1].historyPartners.push(t1[0].id);
+            t2[0].historyPartners.push(t2[1].id);
+            t2[1].historyPartners.push(t2[0].id);
+
+            // Actualizar datos de juego
+            sel.forEach(p => {
                 p.matchesPlayed++;
                 p.lastTurn = slot.timeMins;
             });
@@ -244,7 +263,7 @@
         }
     });
 
-    // 4. Ordenar fixture final y guardar
+    // 3. Orden final y guardado
     matches.sort((a, b) => a.sortKey - b.sortKey || a.court.localeCompare(b.court));
     matches.forEach((m, idx) => m.id = idx + 1);
     
