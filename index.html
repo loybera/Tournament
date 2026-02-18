@@ -69,6 +69,12 @@
             </div>
             <div id="courtList"></div>
             <button class="btn btn-gen" onclick="generateTournament()">GENERAR FIXTURE EQUILIBRADO</button>
+            <button class="btn btn-warning" 
+                onclick="regenerateFutureMatches()"
+                style="width:100%; margin-bottom:15px">
+                🔄 Recalcular partidos pendientes
+            </button>
+
         </div>
 
         <div id="fixture" class="card">
@@ -102,34 +108,59 @@
             if(name === 'fixture') renderFixture();
         }
 
-        function importPlayers() {
-            const lines = document.getElementById('bulkPlayers').value.split('\n');
-            lines.forEach(line => {
-                const parts = line.split(',');
-                if(parts.length >= 2) {
-                    const name = parts[0].trim();
-                    const cat = parseInt(parts[1].trim());
-                    if(name && !isNaN(cat)) {
-                        players.push({ 
-                            id: Math.random().toString(36).substr(2, 9), 
-                            name, cat, matchesPlayed: 0, lastTurn: -1 
-                        });
-                    }
-                }
-            });
-            document.getElementById('bulkPlayers').value = '';
-            save(); renderPlayers();
-        }
+       function importPlayers() {
+    const lines = document.getElementById('bulkPlayers').value.split('\n');
 
-        function renderPlayers() {
-            document.getElementById('pCount').innerText = players.length;
-            document.getElementById('playerList').innerHTML = players.map((p, i) => `
+    lines.forEach(line => {
+        const parts = line.split(',');
+        if(parts.length >= 2) {
+            const name = parts[0].trim();
+            const cat = parseInt(parts[1].trim());
+
+            if(name && !isNaN(cat)) {
+                players.push({ 
+                    id: Math.random().toString(36).substr(2, 9), 
+                    name,
+                    cat,
+                    startTime: "18:00", // NUEVO
+                    matchesPlayed: 0,
+                    lastTurn: -1 
+                });
+            }
+        }
+    });
+
+    document.getElementById('bulkPlayers').value = '';
+    save(); 
+    renderPlayers();
+}
+
+
+ function renderPlayers() {
+        document.getElementById('pCount').innerText = players.length;
+    
+        document.getElementById('playerList').innerHTML =
+            players.map((p, i) => `
                 <div class="player-list-item">
-                    <span>${p.name} <strong>(Cat ${p.cat}°)</strong></span>
-                    <button onclick="removePlayer(${i})" style="color:red; background:none; border:none; cursor:pointer">✕</button>
+                    <span>
+                        ${p.name} <strong>(Cat ${p.cat}°)</strong><br>
+                        <small>Ingreso:</small>
+                        <input type="time"
+                            value="${p.startTime || '18:00'}"
+                            onchange="updateStartTime(${i}, this.value)"
+                            style="font-size:0.8rem;">
+                    </span>
+    
+                    <button onclick="removePlayer(${i})"
+                        style="color:red;background:none;border:none;cursor:pointer">✕</button>
                 </div>
             `).join('');
-        }
+    }
+
+function updateStartTime(i, value) {
+    players[i].startTime = value;
+    save();
+}
 
         function removePlayer(i) { players.splice(i, 1); save(); renderPlayers(); }
 
@@ -340,7 +371,18 @@
             });
 
         let disponibles =
-            players.filter(p => !ocupadosAhora.has(p.id));
+            players.filter(p => {
+        
+                if (ocupadosAhora.has(p.id)) return false;
+        
+                if (!p.startTime) return true;
+        
+                let [h, m] = p.startTime.split(':').map(Number);
+                let ingresoMins = h * 60 + m;
+        
+                return slot.timeMins >= ingresoMins;
+            });
+
 
         console.log("Disponibles:",
             disponibles.map(p => `${p.name}(${p.matchesPlayed})`)
@@ -433,9 +475,37 @@
 }
 
 
+function regenerateFutureMatches() {
+
+    if (!confirm("Se recalcularán SOLO los partidos no jugados. ¿Continuar?"))
+        return;
+
+    // conservar partidos ya jugados
+    const playedMatches =
+        matches.filter(m => m.s1 !== null && m.s2 !== null);
+
+    matches = playedMatches;
+
+    save();
+
+    generateTournament();
+}
 
 
-        
+function deleteMatch(index) {
+
+    const m = matches[index];
+
+    if (m.s1 !== null && m.s2 !== null) {
+        alert("No se puede borrar un partido ya jugado.");
+        return;
+    }
+
+    matches.splice(index, 1);
+    save();
+    renderFixture();
+}
+  
 
         function renderFixture() {
             const container = document.getElementById('fixtureContent');
