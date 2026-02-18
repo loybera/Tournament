@@ -174,115 +174,199 @@
         function removeCourt(i) { courts.splice(i,1); save(); renderCourts(); }
 
       function generateTournament() {
-    if (players.length < 4 || courts.length < 1) return alert("Mínimo 4 jugadores y 1 cancha");
-    
+
+    if (players.length < 4 || courts.length < 1)
+        return alert("Mínimo 4 jugadores y 1 cancha");
+
     matches = [];
-    players.forEach(p => { 
-        p.matchesPlayed = 0; 
+
+    // Inicialización
+    players.forEach(p => {
+        p.matchesPlayed = 0;
         p.lastTurn = -1;
-        p.historyPartners = []; 
+        p.historyPartners = new Set();
+        p.historyRivals = new Set();
     });
 
+    // -------------------------------
+    // Construcción del timeline
+    // -------------------------------
     let timeline = [];
-    const bloquesPorHora = 3; 
+    const bloquesPorHora = 3;
 
     courts.forEach(court => {
         let [h, m] = court.startTime.split(':').map(Number);
+
         for (let i = 0; i < bloquesPorHora; i++) {
             let totalMins = h * 60 + m + (i * 20);
+
             timeline.push({
                 timeMins: totalMins,
                 courtName: court.name,
-                timeStr: `${Math.floor(totalMins/60).toString().padStart(2, '0')}:${(totalMins%60).toString().padStart(2, '0')}`
+                timeStr: `${Math.floor(totalMins / 60).toString().padStart(2, '0')}:${(totalMins % 60).toString().padStart(2, '0')}`
             });
         }
     });
 
-    timeline.sort((a, b) => a.timeMins - b.timeMins || a.courtName.localeCompare(b.courtName));
+    timeline.sort((a, b) =>
+        a.timeMins - b.timeMins ||
+        a.courtName.localeCompare(b.courtName)
+    );
+
+    let rotationCompleted = false;
+
+    // ---------------------------------------
+    // Funciones auxiliares
+    // ---------------------------------------
+
+    function canBePartners(p1, p2) {
+
+        if (!rotationCompleted) {
+
+            if (p1.historyPartners.has(p2.id)) return false;
+
+            // 5 y 6 no pueden jugar juntos
+            if (p1.cat <= 6 && p2.cat <= 6) return false;
+        }
+
+        return true;
+    }
+
+    function canFace(t1, t2) {
+
+        if (rotationCompleted) return true;
+
+        for (let a of t1) {
+            for (let b of t2) {
+                if (a.historyRivals.has(b.id)) return false;
+            }
+        }
+
+        return true;
+    }
+
+    function registerMatch(t1, t2, time) {
+
+        t1[0].historyPartners.add(t1[1].id);
+        t1[1].historyPartners.add(t1[0].id);
+        t2[0].historyPartners.add(t2[1].id);
+        t2[1].historyPartners.add(t2[0].id);
+
+        for (let a of t1) {
+            for (let b of t2) {
+                a.historyRivals.add(b.id);
+                b.historyRivals.add(a.id);
+            }
+        }
+
+        [...t1, ...t2].forEach(p => {
+            p.matchesPlayed++;
+            p.lastTurn = time;
+        });
+    }
+
+    function findValidMatch(candidates) {
+
+        for (let i = 0; i < candidates.length; i++) {
+            for (let j = i + 1; j < candidates.length; j++) {
+
+                let a = candidates[i];
+                let b = candidates[j];
+
+                if (!canBePartners(a, b)) continue;
+
+                for (let k = 0; k < candidates.length; k++) {
+                    if (k === i || k === j) continue;
+
+                    for (let l = k + 1; l < candidates.length; l++) {
+                        if (l === i || l === j) continue;
+
+                        let c = candidates[k];
+                        let d = candidates[l];
+
+                        if (!canBePartners(c, d)) continue;
+
+                        if (!canFace([a, b], [c, d])) continue;
+
+                        return [[a, b], [c, d]];
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    // ---------------------------------------
+    // Generación real del fixture
+    // ---------------------------------------
 
     timeline.forEach(slot => {
-        let ocupadosAhora = new Set();
-        matches.filter(m => m.sortKey === slot.timeMins).forEach(m => {
-            [...m.t1, ...m.t2].forEach(p => ocupadosAhora.add(p.id));
-        });
 
-        // 1. Obtener candidatos disponibles ordenados por prioridad de espera
+        // jugadores ocupados en ese horario
+        let ocupadosAhora = new Set();
+
+        matches
+            .filter(m => m.sortKey === slot.timeMins)
+            .forEach(m => {
+                [...m.t1, ...m.t2].forEach(p => ocupadosAhora.add(p.id));
+            });
+
         let disponibles = players.filter(p => !ocupadosAhora.has(p.id));
+
+        if (disponibles.length < 4) return;
+
+        // Prioridad: menos partidos y más espera
         disponibles.sort((a, b) => {
-            if (a.matchesPlayed !== b.matchesPlayed) return a.matchesPlayed - b.matchesPlayed;
+            if (a.matchesPlayed !== b.matchesPlayed)
+                return a.matchesPlayed - b.matchesPlayed;
+
             return a.lastTurn - b.lastTurn;
         });
 
-        if (disponibles.length >= 4) {
-            let seleccionados = [];
-            let candidatos = [...disponibles];
+        // Intentar igualdad máxima
+        let minPlayed = Math.min(...players.map(p => p.matchesPlayed));
+        let prioridad = disponibles.filter(p => p.matchesPlayed === minPlayed);
 
-            // 2. Intentar armar un grupo de 4 donde las parejas sean nuevas
-            // Tomamos al primero de la lista (el que más debe jugar)
-            let p1 = candidatos.shift();
-            seleccionados.push(p1);
+        let candidatos = prioridad.length >= 4 ? prioridad : disponibles;
 
-            // Buscamos un compañero (p2) que NO haya jugado con p1
-            let p2Index = candidatos.findIndex(c => !p1.historyPartners.includes(c.id));
-            
-            // Si no hay nadie que no haya jugado con p1, tomamos el que sigue por prioridad
-            if (p2Index === -1) p2Index = 0; 
-            let p2 = candidatos.splice(p2Index, 1)[0];
-            seleccionados.push(p2);
+        let result = findValidMatch(candidatos);
 
-            // Buscamos p3 y p4 para el equipo rival
-            // Intentamos que p3 y p4 tampoco hayan jugado juntos
-            let p3 = candidatos.shift();
-            seleccionados.push(p3);
-
-            let p4Index = candidatos.findIndex(c => !p3.historyPartners.includes(c.id));
-            if (p4Index === -1) p4Index = 0;
-            let p4 = candidatos.splice(p4Index, 1)[0];
-            seleccionados.push(p4);
-
-            // 3. Balanceo de nivel dentro de los 4 elegidos
-            // (Para mantener la competitividad pero respetando que p1/p2 son pareja si es posible)
-            seleccionados.sort((a, b) => a.cat - b.cat);
-            
-            // Re-chequeo de parejas para el balanceo:
-            // Intentamos Mejor+Peor vs Medios, pero si ya jugaron juntos, barajamos.
-            let t1, t2;
-            if (!seleccionados[0].historyPartners.includes(seleccionados[3].id)) {
-                t1 = [seleccionados[0], seleccionados[3]];
-                t2 = [seleccionados[1], seleccionados[2]];
-            } else {
-                t1 = [seleccionados[0], seleccionados[2]];
-                t2 = [seleccionados[1], seleccionados[3]];
-            }
-
-            // 4. Guardar historial y actualizar estado
-            t1[0].historyPartners.push(t1[1].id);
-            t1[1].historyPartners.push(t1[0].id);
-            t2[0].historyPartners.push(t2[1].id);
-            t2[1].historyPartners.push(t2[0].id);
-
-            [...t1, ...t2].forEach(p => {
-                p.matchesPlayed++;
-                p.lastTurn = slot.timeMins;
-            });
-
-            matches.push({
-                sortKey: slot.timeMins,
-                time: slot.timeStr,
-                court: slot.courtName,
-                t1: t1,
-                t2: t2,
-                s1: null, s2: null
-            });
+        // Si no hay combinación válida, marcar fin de rotación
+        if (!result && !rotationCompleted) {
+            rotationCompleted = true;
+            result = findValidMatch(disponibles);
         }
+
+        if (!result) return;
+
+        let [t1, t2] = result;
+
+        registerMatch(t1, t2, slot.timeMins);
+
+        matches.push({
+            sortKey: slot.timeMins,
+            time: slot.timeStr,
+            court: slot.courtName,
+            t1: t1,
+            t2: t2,
+            s1: null,
+            s2: null
+        });
+
     });
 
-    matches.sort((a, b) => a.sortKey - b.sortKey || a.court.localeCompare(b.court));
+    matches.sort((a, b) =>
+        a.sortKey - b.sortKey ||
+        a.court.localeCompare(b.court)
+    );
+
     matches.forEach((m, idx) => m.id = idx + 1);
-    
+
     save();
     openTab(null, 'fixture');
 }
+
         
 
         function renderFixture() {
