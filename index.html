@@ -523,7 +523,25 @@ function deleteMatch(index) {
     renderFixture();
 }
   
+function generateTimeline() {
 
+    return courts
+        .map(c => {
+
+            const [h, m] = c.startTime.split(':').map(Number);
+            const totalMins = h * 60 + m;
+
+            return {
+                time: c.startTime + " HS",
+                court: c.name,
+                timeMins: totalMins,
+                sortKey: totalMins
+            };
+        })
+        .sort((a, b) => a.sortKey - b.sortKey);
+}
+
+        
         function renderFixture() {
             const container = document.getElementById('fixtureContent');
             if(matches.length === 0) { container.innerHTML = "<p style='text-align:center; color:#94a3b8;'>No hay partidos generados. Ve a 'Canchas' y presiona el botón verde.</p>"; return; }
