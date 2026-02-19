@@ -535,13 +535,13 @@ function generateTimeline() {
                 courtId: c.id,
                 court: c.name,
                 time: c.startTime,
-                startMins: totalMins,
-                endMins: totalMins + 20, // duración fija 20'
-                label: `${c.name} - ${c.startTime}`
+                timeMins: totalMins,   // 👈 igual que antes
+                sortKey: totalMins     // 👈 igual que antes
             };
         })
-        .sort((a, b) => a.startMins - b.startMins);
+        .sort((a, b) => a.sortKey - b.sortKey);
 }
+
 
         
         function renderFixture() {
