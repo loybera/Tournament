@@ -220,317 +220,188 @@ function updateEndTime(i, value) {
         }
         function removeCourt(i) { courts.splice(i,1); save(); renderCourts(); }
 
-  function generateTournament(startFromTime = null, appendMode = false) {
+  function generateTournament(startFromTime = 0, isRegeneration = false) {
 
-    console.clear();
-    console.log("=== INICIO GENERACIÓN TORNEO ===");
+    console.log("=== GENERANDO TORNEO ===");
 
-    if (players.length < 4 || courts.length < 1) {
-        console.log("ERROR: jugadores o canchas insuficientes");
-        return alert("Mínimo 4 jugadores y 1 cancha");
-    }
+    const timeline = generateTimeline(); // Debe devolver array con:
+    // { time, court, timeMins, sortKey }
 
-    if (!appendMode) {
-        matches = [];
-    }
-    // =========================
-    // Inicialización jugadores
-    // =========================
-    // =========================
-    // Inicialización jugadores
-    // =========================
-    players.forEach((p, index) => {
-    
-        p.id = index;
-    
-        if (!appendMode) {
-            // 🔵 Generación desde cero
-            p.matchesPlayed = 0;
-            p.lastTurn = -1;
-            p.historyPartners = new Set();
-            p.historyRivals = new Set();
-        } else {
-            // 🟢 Modo regeneración → NO resetear historial
-            if (!p.historyPartners) p.historyPartners = new Set();
-            if (!p.historyRivals) p.historyRivals = new Set();
-            if (typeof p.matchesPlayed !== "number") p.matchesPlayed = 0;
-            if (typeof p.lastTurn !== "number") p.lastTurn = -1;
-        }
-    });
+    for (let slot of timeline) {
 
+        if (slot.sortKey < startFromTime)
+            continue;
 
-    console.log("Jugadores:", players.map(p => `${p.name} (${p.cat})`));
+        console.log("Evaluando slot:", slot.time, slot.court);
 
-    // =========================
-    // Construcción timeline
-    // =========================
-    let timeline = [];
-    const bloquesPorHora = 3;
+        // 1️⃣ Filtrar jugadores disponibles en este horario
+        let disponibles = players.filter(p => {
 
-    courts.forEach(court => {
-
-        console.log("Procesando cancha:", court.name, "Inicio:", court.startTime);
-
-        let [h, m] = court.startTime.split(':').map(Number);
-
-        for (let i = 0; i < bloquesPorHora; i++) {
-
-            let totalMins = h * 60 + m + (i * 20);
-
-            timeline.push({
-                timeMins: totalMins,
-                courtName: court.name,
-                timeStr:
-                    `${Math.floor(totalMins / 60)
-                        .toString()
-                        .padStart(2, '0')}:` +
-                    `${(totalMins % 60)
-                        .toString()
-                        .padStart(2, '0')}`
-            });
-        }
-    });
-
-    timeline.sort((a, b) =>
-        a.timeMins - b.timeMins ||
-        a.courtName.localeCompare(b.courtName)
-    );
-
-    console.log("Timeline generado:");
-    timeline.forEach(t => console.log(t.timeStr, t.courtName));
-
-    // =========================
-    // Buscar match válido
-    // =========================
-    function findValidMatch(
-        candidates,
-        allowRepeatRivals = false,
-        allowRepeatPartners = false,
-        phase = ""
-    ) {
-
-        for (let i = 0; i < candidates.length; i++) {
-            for (let j = i + 1; j < candidates.length; j++) {
-
-                let a = candidates[i];
-                let b = candidates[j];
-
-                if (a.cat === b.cat) continue;
-                if (!allowRepeatPartners && a.historyPartners.has(b.id)) continue;
-
-                for (let k = 0; k < candidates.length; k++) {
-                    if (k === i || k === j) continue;
-
-                    for (let l = k + 1; l < candidates.length; l++) {
-                        if (l === i || l === j) continue;
-
-                        let c = candidates[k];
-                        let d = candidates[l];
-
-                        if (c.cat === d.cat) continue;
-                        if (!allowRepeatPartners && c.historyPartners.has(d.id)) continue;
-
-                        if (!allowRepeatRivals) {
-                            let invalid = false;
-                            for (let p1 of [a, b]) {
-                                for (let p2 of [c, d]) {
-                                    if (p1.historyRivals.has(p2.id)) {
-                                        invalid = true;
-                                        break;
-                                    }
-                                }
-                                if (invalid) break;
-                            }
-                            if (invalid) continue;
-                        }
-
-                        console.log("✔ Match encontrado en fase", phase);
-                        return [[a, b], [c, d]];
-                    }
-                }
+            if (p.endTime) {
+                const [eh, em] = p.endTime.split(':').map(Number);
+                const endMins = eh * 60 + em;
+                if (slot.timeMins > endMins)
+                    return false;
             }
-        }
 
-        return null;
-    }
-
-    // =========================
-    // Registrar partido
-    // =========================
-    function registerMatch(t1, t2, time) {
-
-        console.log("Registrando partido:",
-            `${t1[0].name} + ${t1[1].name} VS ${t2[0].name} + ${t2[1].name}`
-        );
-
-        t1[0].historyPartners.add(t1[1].id);
-        t1[1].historyPartners.add(t1[0].id);
-        t2[0].historyPartners.add(t2[1].id);
-        t2[1].historyPartners.add(t2[0].id);
-
-        for (let a of t1) {
-            for (let b of t2) {
-                a.historyRivals.add(b.id);
-                b.historyRivals.add(a.id);
+            if (p.startTime) {
+                const [sh, sm] = p.startTime.split(':').map(Number);
+                const startMins = sh * 60 + sm;
+                if (slot.timeMins < startMins)
+                    return false;
             }
-        }
 
-        [...t1, ...t2].forEach(p => {
-            p.matchesPlayed++;
-            p.lastTurn = time;
+            return true;
         });
 
-        console.log("Estado matchesPlayed:",
-            players.map(p => `${p.name}:${p.matchesPlayed}`).join(" | ")
-        );
-    }
-
-    // =========================
-    // Generación
-    // =========================
-    timeline.forEach(slot => {
-
-        // 🔥 MODO REGENERACIÓN
-        if (appendMode && startFromTime !== null) {
-            if (slot.timeMins <= startFromTime) {
-                console.log("⏩ Saltando slot ya jugado:", slot.timeStr);
-                return;
-            }
-        }
-        console.log("\n--- SLOT", slot.timeStr, slot.courtName, "---");
-
-        let ocupadosAhora = new Set();
-
-        matches
-            .filter(m => m.sortKey === slot.timeMins)
-            .forEach(m => {
-                [...m.t1, ...m.t2].forEach(p =>
-                    ocupadosAhora.add(p.id)
-                );
-            });
-
-        let disponibles =
-    players.filter(p => {
-
-        if (ocupadosAhora.has(p.id)) return false;
-
-        let ingresoMins = 0;
-        let salidaMins = 24 * 60;
-
-        if (p.startTime) {
-            let [h1, m1] = p.startTime.split(':').map(Number);
-            ingresoMins = h1 * 60 + m1;
-        }
-
-        if (p.endTime) {
-            let [h2, m2] = p.endTime.split(':').map(Number);
-            salidaMins = h2 * 60 + m2;
-        }
-
-        // 🔥 Solo puede jugar entre ingreso y salida
-        return slot.timeMins >= ingresoMins &&
-               slot.timeMins < salidaMins;
-    });
-
-
-
-        console.log("Disponibles:",
-            disponibles.map(p => `${p.name}(${p.matchesPlayed})`)
-        );
-
         if (disponibles.length < 4) {
-            console.log("❌ No hay suficientes jugadores");
-            return;
+            console.log("No hay suficientes jugadores.");
+            continue;
         }
 
+        // 2️⃣ ORDEN INTELIGENTE POR RATIO REAL
         disponibles.sort((a, b) => {
-            if (a.matchesPlayed !== b.matchesPlayed)
-                return a.matchesPlayed - b.matchesPlayed;
+
+            function calcularRatio(jugador) {
+
+                let ingresoMins = 0;
+
+                if (jugador.startTime) {
+                    let [h, m] = jugador.startTime.split(':').map(Number);
+                    ingresoMins = h * 60 + m;
+                }
+
+                let turnosDisponibles =
+                    timeline.filter(t =>
+                        t.timeMins >= ingresoMins &&
+                        t.timeMins <= slot.timeMins
+                    ).length;
+
+                if (turnosDisponibles === 0) return 0;
+
+                return jugador.matchesPlayed / turnosDisponibles;
+            }
+
+            const ratioA = calcularRatio(a);
+            const ratioB = calcularRatio(b);
+
+            if (ratioA !== ratioB)
+                return ratioA - ratioB;
+
             return a.lastTurn - b.lastTurn;
         });
 
-        let minPlayed =
-            Math.min(...players.map(p => p.matchesPlayed));
+        const match = findValidMatch(disponibles);
 
-        let prioridad =
-            disponibles.filter(p => p.matchesPlayed === minPlayed);
-
-        let candidatos =
-            prioridad.length >= 4 ? prioridad : disponibles;
-
-        let result = null;
-
-        result = findValidMatch(candidatos, false, false, 1);
-        if (!result)
-            result = findValidMatch(candidatos, true, false, 2);
-        if (!result)
-            result = findValidMatch(candidatos, true, true, 3);
-        if (!result)
-            result = findValidMatch(disponibles, true, true, 4);
-
-        if (!result) {
-            console.log("⚠ Activando fase 5 supervivencia");
-            for (let i = 0; i < disponibles.length; i++) {
-                for (let j = i + 1; j < disponibles.length; j++) {
-                    if (disponibles[i].cat === disponibles[j].cat) continue;
-
-                    for (let k = 0; k < disponibles.length; k++) {
-                        if (k === i || k === j) continue;
-
-                        for (let l = k + 1; l < disponibles.length; l++) {
-                            if (l === i || l === j) continue;
-                            if (disponibles[k].cat === disponibles[l].cat) continue;
-
-                            result = [
-                                [disponibles[i], disponibles[j]],
-                                [disponibles[k], disponibles[l]]
-                            ];
-                            break;
-                        }
-                        if (result) break;
-                    }
-                    if (result) break;
-                }
-                if (result) break;
-            }
+        if (!match) {
+            console.log("No se pudo armar partido válido.");
+            continue;
         }
 
-        if (!result) {
-            console.log("❌ No se pudo generar partido en este slot");
-            return;
-        }
-
-        let [t1, t2] = result;
-
-        registerMatch(t1, t2, slot.timeMins);
-
-        matches.push({
-            sortKey: slot.timeMins,
-            time: slot.timeStr,
-            court: slot.courtName,
-            t1: t1,
-            t2: t2,
+        const newMatch = {
+            id: matches.length + 1,
+            t1: match.team1,
+            t2: match.team2,
+            time: slot.time,
+            court: slot.court,
+            sortKey: slot.sortKey,
             s1: null,
             s2: null
+        };
+
+        matches.push(newMatch);
+
+        // 3️⃣ Actualizar estadísticas
+        [...match.team1, ...match.team2].forEach(p => {
+
+            p.matchesPlayed++;
+            p.lastTurn = slot.sortKey;
+
         });
-    });
 
-    console.log("\n=== FIN GENERACIÓN ===");
-    console.log("Total partidos generados:", matches.length);
+        // 4️⃣ Guardar historial
+        registerHistory(match.team1, match.team2);
 
-    matches.forEach((m, idx) => m.id = idx + 1);
+        console.log("Partido generado:", newMatch.id);
+    }
 
     save();
-    openTab(null, 'fixture');
+}
+
+
+function findValidMatch(playersList) {
+
+    for (let i = 0; i < playersList.length; i++) {
+        for (let j = i + 1; j < playersList.length; j++) {
+
+            const p1 = playersList[i];
+            const p2 = playersList[j];
+
+            if (p1.historyPartners.has(p2.id))
+                continue;
+
+            for (let k = 0; k < playersList.length; k++) {
+                for (let l = k + 1; l < playersList.length; l++) {
+
+                    const p3 = playersList[k];
+                    const p4 = playersList[l];
+
+                    if (
+                        p1.id === p3.id ||
+                        p1.id === p4.id ||
+                        p2.id === p3.id ||
+                        p2.id === p4.id
+                    )
+                        continue;
+
+                    if (p3.historyPartners.has(p4.id))
+                        continue;
+
+                    const conflicto =
+                        p1.historyRivals.has(p3.id) ||
+                        p1.historyRivals.has(p4.id) ||
+                        p2.historyRivals.has(p3.id) ||
+                        p2.historyRivals.has(p4.id);
+
+                    if (conflicto)
+                        continue;
+
+                    return {
+                        team1: [p1, p2],
+                        team2: [p3, p4]
+                    };
+                }
+            }
+        }
+    }
+
+    return null;
+}
+
+function registerHistory(team1, team2) {
+
+    // Compañeros
+    team1[0].historyPartners.add(team1[1].id);
+    team1[1].historyPartners.add(team1[0].id);
+
+    team2[0].historyPartners.add(team2[1].id);
+    team2[1].historyPartners.add(team2[0].id);
+
+    // Rivales
+    for (let a of team1) {
+        for (let b of team2) {
+            a.historyRivals.add(b.id);
+            b.historyRivals.add(a.id);
+        }
+    }
 }
 
 
 function regenerateFutureMatches() {
 
-    if (!confirm("Se recalcularán SOLO los partidos no jugados respetando jugadores que ya se fueron. ¿Continuar?"))
+    if (!confirm("Se recalcularán SOLO los partidos no jugados respetando historial. ¿Continuar?"))
         return;
 
-    // 1️⃣ Separar partidos jugados y pendientes
     const playedMatches =
         matches.filter(m => m.s1 !== null && m.s2 !== null);
 
@@ -538,11 +409,10 @@ function regenerateFutureMatches() {
         matches.filter(m => m.s1 === null && m.s2 === null);
 
     if (pendingMatches.length === 0) {
-        alert("No hay partidos pendientes para recalcular.");
+        alert("No hay partidos pendientes.");
         return;
     }
 
-    // 2️⃣ Detectar desde qué horario continuar
     let startFromTime = 0;
 
     if (playedMatches.length > 0) {
@@ -550,10 +420,9 @@ function regenerateFutureMatches() {
         startFromTime = lastPlayed.sortKey;
     }
 
-    // 3️⃣ Conservar solo los jugados
     matches = [...playedMatches];
 
-    // 4️⃣ Resetear completamente el estado de jugadores
+    // RESET TOTAL
     players.forEach(p => {
         p.matchesPlayed = 0;
         p.lastTurn = -1;
@@ -561,44 +430,33 @@ function regenerateFutureMatches() {
         p.historyRivals = new Set();
     });
 
-    // 5️⃣ Reconstruir historial desde partidos jugados
+    // RECONSTRUIR DESDE HISTORIAL REAL
     playedMatches.forEach(m => {
 
         const team1 = m.t1;
         const team2 = m.t2;
 
-        // Registrar compañeros
-        team1[0].historyPartners.add(team1[1].id);
-        team1[1].historyPartners.add(team1[0].id);
+        registerHistory(team1, team2);
 
-        team2[0].historyPartners.add(team2[1].id);
-        team2[1].historyPartners.add(team2[0].id);
-
-        // Registrar rivales
-        for (let a of team1) {
-            for (let b of team2) {
-                a.historyRivals.add(b.id);
-                b.historyRivals.add(a.id);
-            }
-        }
-
-        // Registrar estadísticas reales
         [...team1, ...team2].forEach(p => {
+
             const player = players.find(x => x.id === p.id);
+
             if (player) {
                 player.matchesPlayed++;
-                player.lastTurn = m.sortKey; // 🔥 usar tiempo real
+                player.lastTurn = m.sortKey;
             }
+
         });
     });
 
     console.log("Historial reconstruido correctamente");
 
-    // 6️⃣ Generar solo lo pendiente
     generateTournament(startFromTime, true);
 
     save();
 }
+
 
 
 
