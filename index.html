@@ -543,40 +543,63 @@ function regenerateFutureMatches() {
     }
 
     // 2️⃣ Detectar desde qué horario continuar
-    const lastPlayed = playedMatches[playedMatches.length - 1];
-
     let startFromTime = 0;
 
-    if (lastPlayed) {
-        startFromTime = lastPlayed.timeMins;
+    if (playedMatches.length > 0) {
+        const lastPlayed = playedMatches[playedMatches.length - 1];
+        startFromTime = lastPlayed.sortKey;
     }
 
-    // 3️⃣ Restaurar solo los jugados
+    // 3️⃣ Conservar solo los jugados
     matches = [...playedMatches];
 
-    // 4️⃣ Resetear estadísticas SOLO para los pendientes
+    // 4️⃣ Resetear completamente el estado de jugadores
     players.forEach(p => {
         p.matchesPlayed = 0;
         p.lastTurn = -1;
+        p.historyPartners = new Set();
+        p.historyRivals = new Set();
     });
 
-    // Recalcular estadísticas de los ya jugados
-    playedMatches.forEach((m, index) => {
-        const allPlayers = [...m.t1, ...m.t2];
-        allPlayers.forEach(p => {
+    // 5️⃣ Reconstruir historial desde partidos jugados
+    playedMatches.forEach(m => {
+
+        const team1 = m.t1;
+        const team2 = m.t2;
+
+        // Registrar compañeros
+        team1[0].historyPartners.add(team1[1].id);
+        team1[1].historyPartners.add(team1[0].id);
+
+        team2[0].historyPartners.add(team2[1].id);
+        team2[1].historyPartners.add(team2[0].id);
+
+        // Registrar rivales
+        for (let a of team1) {
+            for (let b of team2) {
+                a.historyRivals.add(b.id);
+                b.historyRivals.add(a.id);
+            }
+        }
+
+        // Registrar estadísticas reales
+        [...team1, ...team2].forEach(p => {
             const player = players.find(x => x.id === p.id);
             if (player) {
                 player.matchesPlayed++;
-                player.lastTurn = index;
+                player.lastTurn = m.sortKey; // 🔥 usar tiempo real
             }
         });
     });
 
-    // 5️⃣ Generar nuevos partidos SOLO después del último jugado
+    console.log("Historial reconstruido correctamente");
+
+    // 6️⃣ Generar solo lo pendiente
     generateTournament(startFromTime, true);
 
     save();
 }
+
 
 
 
