@@ -532,13 +532,15 @@ function generateTimeline() {
             const totalMins = h * 60 + m;
 
             return {
-                time: c.startTime + " HS",
+                courtId: c.id,
                 court: c.name,
-                timeMins: totalMins,
-                sortKey: totalMins
+                time: c.startTime,
+                startMins: totalMins,
+                endMins: totalMins + 20, // duración fija 20'
+                label: `${c.name} - ${c.startTime}`
             };
         })
-        .sort((a, b) => a.sortKey - b.sortKey);
+        .sort((a, b) => a.startMins - b.startMins);
 }
 
         
