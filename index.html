@@ -391,20 +391,33 @@ function normalizePlayers() {
 
     players.forEach(p => {
 
-        if (!p.historyPartners)
-            p.historyPartners = [];
+        // ---- historyPartners ----
+        if (!p.historyPartners) {
+            p.historyPartners = new Set();
+        }
+        else if (Array.isArray(p.historyPartners)) {
+            p.historyPartners = new Set(p.historyPartners);
+        }
+        else {
+            // vino como objeto {} corrupto
+            p.historyPartners = new Set();
+        }
 
-        if (!p.historyRivals)
-            p.historyRivals = [];
+        // ---- historyRivals ----
+        if (!p.historyRivals) {
+            p.historyRivals = new Set();
+        }
+        else if (Array.isArray(p.historyRivals)) {
+            p.historyRivals = new Set(p.historyRivals);
+        }
+        else {
+            p.historyRivals = new Set();
+        }
 
-        // Convertir SIEMPRE a Set
-        p.historyPartners = new Set(p.historyPartners);
-        p.historyRivals = new Set(p.historyRivals);
-
-        if (p.matchesPlayed === undefined)
+        if (typeof p.matchesPlayed !== "number")
             p.matchesPlayed = 0;
 
-        if (p.lastTurn === undefined)
+        if (typeof p.lastTurn !== "number")
             p.lastTurn = -1;
     });
 }
