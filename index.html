@@ -525,23 +525,37 @@ function deleteMatch(index) {
   
 function generateTimeline() {
 
-    return courts
-        .map(c => {
+    const timeline = [];
 
-            const [h, m] = c.startTime.split(':').map(Number);
-            const totalMins = h * 60 + m;
+    courts.forEach(c => {
 
-            return {
+        const [h, m] = c.startTime.split(':').map(Number);
+        const baseMins = h * 60 + m;
+
+        // 3 partidos de 20' dentro de la reserva de 60'
+        for (let i = 0; i < 3; i++) {
+
+            const slotMins = baseMins + (i * 20);
+
+            const hour = Math.floor(slotMins / 60);
+            const mins = slotMins % 60;
+
+            const timeStr =
+                String(hour).padStart(2, '0') + ":" +
+                String(mins).padStart(2, '0');
+
+            timeline.push({
                 courtId: c.id,
                 court: c.name,
-                time: c.startTime,
-                timeMins: totalMins,   // 👈 igual que antes
-                sortKey: totalMins     // 👈 igual que antes
-            };
-        })
-        .sort((a, b) => a.sortKey - b.sortKey);
-}
+                time: timeStr,
+                timeMins: slotMins,
+                sortKey: slotMins
+            });
+        }
+    });
 
+    return timeline.sort((a, b) => a.sortKey - b.sortKey);
+}
 
         
         function renderFixture() {
