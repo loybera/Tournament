@@ -387,41 +387,6 @@ function findValidMatch(playersList) {
     return null;
 }
 
-function normalizePlayers() {
-
-    players.forEach(p => {
-
-        // ---- historyPartners ----
-        if (!p.historyPartners) {
-            p.historyPartners = new Set();
-        }
-        else if (Array.isArray(p.historyPartners)) {
-            p.historyPartners = new Set(p.historyPartners);
-        }
-        else {
-            // vino como objeto {} corrupto
-            p.historyPartners = new Set();
-        }
-
-        // ---- historyRivals ----
-        if (!p.historyRivals) {
-            p.historyRivals = new Set();
-        }
-        else if (Array.isArray(p.historyRivals)) {
-            p.historyRivals = new Set(p.historyRivals);
-        }
-        else {
-            p.historyRivals = new Set();
-        }
-
-        if (typeof p.matchesPlayed !== "number")
-            p.matchesPlayed = 0;
-
-        if (typeof p.lastTurn !== "number")
-            p.lastTurn = -1;
-    });
-}
-
 function registerHistory(team1, team2) {
 
     // Compañeros
@@ -440,7 +405,34 @@ function registerHistory(team1, team2) {
     }
 }
 
+function normalizePlayers() {
 
+    players.forEach(p => {
+
+        // ---- historyPartners ----
+        if (Array.isArray(p.historyPartners)) {
+            p.historyPartners = new Set(p.historyPartners);
+        } else {
+            p.historyPartners = new Set();
+        }
+
+        // ---- historyRivals ----
+        if (Array.isArray(p.historyRivals)) {
+            p.historyRivals = new Set(p.historyRivals);
+        } else {
+            p.historyRivals = new Set();
+        }
+
+        // ---- stats ----
+        if (typeof p.matchesPlayed !== "number")
+            p.matchesPlayed = 0;
+
+        if (typeof p.lastTurn !== "number")
+            p.lastTurn = -1;
+    });
+}
+
+        
 function regenerateFutureMatches() {
 
     normalizePlayers(); // 👈 AGREGAR ESTO
