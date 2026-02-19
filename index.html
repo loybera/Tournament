@@ -93,11 +93,18 @@
         let courts = JSON.parse(localStorage.getItem('tp_c')) || [];
         let matches = JSON.parse(localStorage.getItem('tp_m')) || [];
 
-        function save() {
-            localStorage.setItem('tp_p', JSON.stringify(players));
-            localStorage.setItem('tp_c', JSON.stringify(courts));
-            localStorage.setItem('tp_m', JSON.stringify(matches));
-        }
+function save() {
+
+    const playersToSave = players.map(p => ({
+        ...p,
+        historyPartners: Array.from(p.historyPartners || []),
+        historyRivals: Array.from(p.historyRivals || [])
+    }));
+
+    localStorage.setItem('tp_p', JSON.stringify(playersToSave));
+    localStorage.setItem('tp_c', JSON.stringify(courts));
+    localStorage.setItem('tp_m', JSON.stringify(matches));
+}
 
         function openTab(evt, name) {
             document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
@@ -221,6 +228,8 @@ function updateEndTime(i, value) {
         function removeCourt(i) { courts.splice(i,1); save(); renderCourts(); }
 
   function generateTournament(startFromTime = 0, isRegeneration = false) {
+
+    normalizePlayers(); // 👈 AGREGAR ESTO
 
     console.log("=== GENERANDO TORNEO ===");
 
@@ -378,6 +387,28 @@ function findValidMatch(playersList) {
     return null;
 }
 
+function normalizePlayers() {
+
+    players.forEach(p => {
+
+        if (!p.historyPartners)
+            p.historyPartners = [];
+
+        if (!p.historyRivals)
+            p.historyRivals = [];
+
+        // Convertir SIEMPRE a Set
+        p.historyPartners = new Set(p.historyPartners);
+        p.historyRivals = new Set(p.historyRivals);
+
+        if (p.matchesPlayed === undefined)
+            p.matchesPlayed = 0;
+
+        if (p.lastTurn === undefined)
+            p.lastTurn = -1;
+    });
+}
+
 function registerHistory(team1, team2) {
 
     // Compañeros
@@ -398,6 +429,8 @@ function registerHistory(team1, team2) {
 
 
 function regenerateFutureMatches() {
+
+    normalizePlayers(); // 👈 AGREGAR ESTO
 
     if (!confirm("Se recalcularán SOLO los partidos no jugados respetando historial. ¿Continuar?"))
         return;
