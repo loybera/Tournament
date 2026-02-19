@@ -562,7 +562,7 @@ function regenerateFutureMatches() {
 
     // Recalcular estadísticas de los ya jugados
     playedMatches.forEach((m, index) => {
-        const allPlayers = [...m.team1, ...m.team2];
+        const allPlayers = [...m.t1, ...m.t2];
         allPlayers.forEach(p => {
             const player = players.find(x => x.id === p.id);
             if (player) {
