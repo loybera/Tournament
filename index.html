@@ -1275,42 +1275,43 @@ function renderFixture() {
         return a.court.localeCompare(b.court);
     });
 
-    container.innerHTML = sortedMatches.map(m => `
-        <div class="match-card">
-            <div class="match-header">
-                <span>PARTIDO #${m.id}</span>
-                <span>
-                    <span class="badge bg-hora">${m.time} HS</span> 
-                    <span class="badge bg-cancha">${m.court}</span>
-                </span>
+    container.innerHTML = sortedMatches.map((m, index) => `
+    <div class="match-card">
+        <div class="match-header">
+            <span>PARTIDO #${index + 1}</span>
+            <span>
+                <span class="badge bg-hora">${m.time} HS</span> 
+                <span class="badge bg-cancha">${m.court}</span>
+            </span>
+        </div>
+
+        <div class="match-body">
+            <div>
+                <strong>
+                    ${getPlayer(m.t1[0]).name} (${getPlayer(m.t1[0]).cat})<br>
+                    ${getPlayer(m.t1[1]).name} (${getPlayer(m.t1[1]).cat})
+                </strong>
             </div>
 
-            <div class="match-body">
-                <div>
-                    <strong>
-                        ${getPlayer(m.t1[0]).name} (${getPlayer(m.t1[0]).cat})<br>
-                        ${getPlayer(m.t1[1]).name} (${getPlayer(m.t1[1]).cat})
-                    </strong>
-                </div>
+            <div>
+                <input type="number" class="score-input" 
+                    value="${m.s1 !== null ? m.s1 : ''}" 
+                    onchange="updateScoreById('${m.id}', 1, this.value)">
+                <input type="number" class="score-input" 
+                    value="${m.s2 !== null ? m.s2 : ''}" 
+                    onchange="updateScoreById('${m.id}', 2, this.value)">
+            </div>
 
-                <div>
-                    <input type="number" class="score-input" 
-                        value="${m.s1 !== null ? m.s1 : ''}" 
-                        onchange="updateScoreById('${m.id}', 1, this.value)">
-                    <input type="number" class="score-input" 
-                        value="${m.s2 !== null ? m.s2 : ''}" 
-                        onchange="updateScoreById('${m.id}', 2, this.value)">
-                </div>
-
-                <div>
-                    <strong>
-                        ${getPlayer(m.t2[0]).name} (${getPlayer(m.t2[0]).cat})<br>
-                        ${getPlayer(m.t2[1]).name} (${getPlayer(m.t2[1]).cat})
-                    </strong>
-                </div>
+            <div>
+                <strong>
+                    ${getPlayer(m.t2[0]).name} (${getPlayer(m.t2[0]).cat})<br>
+                    ${getPlayer(m.t2[1]).name} (${getPlayer(m.t2[1]).cat})
+                </strong>
             </div>
         </div>
-    `).join('');
+    </div>
+`).join('');
+
 }
 
 // --- ACTUALIZAR SCORE POR ID ---
