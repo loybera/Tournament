@@ -911,7 +911,7 @@ function calculateScheduledMatches(matches) {
 
     matches.forEach(match => {
 
-        [...match.team1, ...match.team2].forEach(player => {
+        [...match.t1, ...match.t2].forEach(player => {
 
             if (!count[player.id])
                 count[player.id] = 0;
