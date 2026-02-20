@@ -858,15 +858,14 @@ function generateTimeline() {
 
     const scheduledCount = calculateScheduledMatches(matches);
 
+    Object.keys(scheduledCount).forEach(id => {
+        if (s[id]) s[id].scheduled = scheduledCount[id];
+        });
+
     matches.forEach(m => {
 
         if (m.s1 === null || m.s2 === null)
             return;
-
-         // Partidos programados
-        [...m.t1, ...m.t2].forEach(id => {
-            if (s[id]) s[id].scheduled++;
-        });
 
         // Partidos jugados
         [...m.t1, ...m.t2].forEach(id => {
