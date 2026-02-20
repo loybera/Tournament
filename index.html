@@ -85,6 +85,8 @@
         window.players = [];
         window.courts = [];
         window.matches = [];
+        window.isAdmin = false;
+
     </script>
     <script type="module">
 
@@ -154,6 +156,8 @@ document.addEventListener("DOMContentLoaded", () => {
         <button class="tab-btn" onclick="openTab(event, 'canchas')">CANCHAS</button>
         <button class="tab-btn" onclick="openTab(event, 'fixture')">FIXTURE</button>
         <button class="tab-btn" onclick="openTab(event, 'posiciones')">POSICIONES</button>
+        <button class="tab-btn" onclick="openTab(event, 'admin')">ADMIN</button>
+
     </nav>
 
     <div class="container">
@@ -199,9 +203,51 @@ document.addEventListener("DOMContentLoaded", () => {
             <h3>Ranking Individual</h3>
             <div id="rankingContent"></div>
         </div>
+
+        <div id="admin" class="card">
+            <h3>Panel Admin</h3>
+        
+            <input type="password" id="adminPass" placeholder="Clave admin">
+            <button class="btn btn-add" style="width:100%; margin-top:10px"
+                onclick="loginAdmin()">Ingresar</button>
+        
+            <div id="adminStatus" style="margin-top:15px; font-weight:bold;"></div>
+        </div>
+
     </div>
 
     <script>
+
+function loginAdmin() {
+
+    const pass = document.getElementById("adminPass").value;
+
+    // 🔐 Cambiá esta clave
+    const ADMIN_PASSWORD = "padelSanse";
+
+    if (pass === ADMIN_PASSWORD) {
+        window.isAdmin = true;
+        document.getElementById("adminStatus").innerText = "Modo Admin Activo ✅";
+        alert("Admin activado");
+        applyAdminRestrictions();
+    } else {
+        alert("Clave incorrecta");
+    }
+
+    document.getElementById("adminPass").value = "";
+}
+
+function applyAdminRestrictions() {
+
+    const adminButtons = document.querySelectorAll(
+        ".btn-warning, .btn-danger, .btn-gen"
+    );
+
+    adminButtons.forEach(btn => {
+        btn.style.display = window.isAdmin ? "block" : "none";
+    });
+}
+
 
 function save() {
     saveToFirebase(players, courts, matches);
@@ -338,6 +384,8 @@ function updateEndTime(i, value) {
 
         // --- NUEVAS FUNCIONES DE LIMPIEZA ---
         function resetFixtureOnly() {
+            if (!window.isAdmin) return;
+
             if(confirm("¿Quieres borrar solo el fixture? Mantendrás la lista de jugadores intacta para volver a sortear.")) {
                 matches = [];
                 save();
@@ -347,6 +395,8 @@ function updateEndTime(i, value) {
         }
 
         function resetAllPlayersAndMatches() {
+            if (!window.isAdmin) return;
+
             if(confirm("ATENCIÓN: Se borrarán todos los jugadores y el fixture actual. ¿Deseas continuar?")) {
                 players = [];
                 matches = [];
@@ -377,6 +427,11 @@ function updateEndTime(i, value) {
         function removeCourt(i) { courts.splice(i,1); save(); renderCourts(); }
 
   function generateTournament(startFromTime = 0, isRegeneration = false) {
+
+    if (!window.isAdmin) {
+        alert("Solo admin puede generar fixture");
+        return;
+    }
 
     normalizePlayers(); // 👈 AGREGAR ESTO
 
@@ -777,6 +832,11 @@ function normalizePlayers() {
         
 function regenerateFutureMatches() {
 
+    if (!window.isAdmin) {
+        alert("Solo admin puede regenerar partidos");
+        return;
+    }
+
     normalizePlayers(); // 👈 AGREGAR ESTO
 
     if (!confirm("Se recalcularán SOLO los partidos no jugados respetando historial. ¿Continuar?"))
@@ -1021,7 +1081,8 @@ function calculateScheduledMatches(matches) {
     return count;
 }
 
-        renderPlayers(); renderCourts(); renderFixture();
+        renderPlayers(); renderCourts(); renderFixture(); applyAdminRestrictions();
+
 
      
 
