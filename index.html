@@ -65,21 +65,24 @@ window.saveToFirebase = async function(players, courts, matches) {
     );
 };
 
-// 👇 Listener realtime
-onSnapshot(doc(db, "torneos", "americano1"), (docSnap) => {
+document.addEventListener("DOMContentLoaded", () => {
 
-    if (!docSnap.exists()) return;
+    onSnapshot(doc(db, "torneos", "americano1"), (docSnap) => {
 
-    const data = docSnap.data();
+        if (!docSnap.exists()) return;
 
-    window.players = data.players || [];
-    window.courts = data.courts || [];
-    window.matches = data.matches || [];
+        const data = docSnap.data();
 
-    normalizePlayers();
-    renderPlayers();
-    renderCourts();
-    renderFixture();
+        window.players = data.players || [];
+        window.courts = data.courts || [];
+        window.matches = data.matches || [];
+
+        normalizePlayers();
+        renderPlayers();
+        renderCourts();
+        renderFixture();
+    });
+
 });
 
 </script>
