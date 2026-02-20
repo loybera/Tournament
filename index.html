@@ -178,15 +178,19 @@ function save() {
             const cat = parseInt(parts[1].trim());
 
             if(name && !isNaN(cat)) {
+                
                 players.push({ 
                     id: Math.random().toString(36).substr(2, 9), 
                     name,
                     cat,
                     startTime: "18:00",
-                    endTime: "23:59",   // 🔥 NUEVO
+                    endTime: "23:59",
                     matchesPlayed: 0,
-                    lastTurn: -1 
+                    lastTurn: -1,
+                    historyPartners: new Set(),
+                    historyRivals: new Set()
                 });
+
             }
         }
     });
@@ -471,19 +475,15 @@ function normalizePlayers() {
 
     players.forEach(p => {
 
-        // ---- historyPartners ----
-        if (Array.isArray(p.historyPartners)) {
-            p.historyPartners = new Set(p.historyPartners);
-        } else {
-            p.historyPartners = new Set();
+
+        if (!(p.historyPartners instanceof Set)) {
+            p.historyPartners = new Set(p.historyPartners || []);
+        }
+        
+        if (!(p.historyRivals instanceof Set)) {
+            p.historyRivals = new Set(p.historyRivals || []);
         }
 
-        // ---- historyRivals ----
-        if (Array.isArray(p.historyRivals)) {
-            p.historyRivals = new Set(p.historyRivals);
-        } else {
-            p.historyRivals = new Set();
-        }
 
         // ---- stats ----
         if (typeof p.matchesPlayed !== "number")
