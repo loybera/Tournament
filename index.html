@@ -25,8 +25,56 @@
         .action-group { display: flex; gap: 10px; margin-top: 20px; }
         .match-card { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px; background: white; }
         .match-header { background: #f8fafc; padding: 8px 15px; display: flex; justify-content: space-between; font-size: 0.8rem; border-bottom: 1px solid #e2e8f0; font-weight: bold; }
-        .match-body { padding: 15px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; text-align: center; }
-        .score-input { width: 45px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 2px solid #3b82f6; border-radius: 4px; }
+.match-body {
+    padding: 15px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+}
+
+/* 📱 MOBILE */
+@media (max-width: 600px) {
+
+    .container {
+        padding: 0 10px;
+    }
+
+    .match-body {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .score-input {
+        width: 60px;
+        font-size: 1.4rem;
+    }
+
+    .match-header {
+        font-size: 0.7rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    .player-list-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    .tab-btn {
+        font-size: 0.7rem;
+        padding: 12px 8px;
+    }
+}
+
+        .score-input {
+    width: 55px;
+    height: 45px;
+}
+
         .badge { padding: 2px 6px; border-radius: 4px; color: white; font-size: 0.7rem; }
         .bg-cancha { background: #3b82f6; }
         .bg-hora { background: #64748b; }
