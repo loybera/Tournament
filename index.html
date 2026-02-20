@@ -295,7 +295,7 @@ function updateEndTime(i, value) {
 
     for (let slot of timeline) {
 
-        if (slot.sortKey < startFromTime)
+        if (slot.sortKey <= startFromTime)
             continue;
 
         console.log("Evaluando slot:", slot.time, slot.court);
@@ -357,7 +357,7 @@ function updateEndTime(i, value) {
             return a.lastTurn - b.lastTurn;
         });
 
-        const match = findValidMatch(disponibles);
+        const match = findValidMatchV2(disponibles);
 
         if (!match) {
             console.log("No se pudo armar partido válido.");
@@ -446,6 +446,105 @@ function findValidMatch(playersList) {
 
     return null;
 }
+
+        function findValidMatchV2(playersList) {
+
+    // Ordenamos por categoría para favorecer combinaciones cercanas
+    const list = [...playersList].sort((a, b) => a.cat - b.cat);
+
+    // Función que evalúa si un partido es válido
+    function isValid(p1, p2, p3, p4) {
+
+        // Ya fueron compañeros
+        if (p1.historyPartners.has(p2.id)) return false;
+        if (p3.historyPartners.has(p4.id)) return false;
+
+        // Ya fueron rivales
+        const conflicto =
+            p1.historyRivals.has(p3.id) ||
+            p1.historyRivals.has(p4.id) ||
+            p2.historyRivals.has(p3.id) ||
+            p2.historyRivals.has(p4.id);
+
+        if (conflicto) return false;
+
+        return true;
+    }
+
+    // -------- PASADA 1: PRIORIDAD EQUIPOS BALANCEADOS --------
+    for (let i = 0; i < list.length; i++) {
+        for (let j = i + 1; j < list.length; j++) {
+
+            const p1 = list[i];
+            const p2 = list[j];
+
+            // 🔥 Prioridad: diferencia de categoría 1
+            if (Math.abs(p1.cat - p2.cat) !== 1)
+                continue;
+
+            for (let k = 0; k < list.length; k++) {
+                for (let l = k + 1; l < list.length; l++) {
+
+                    const p3 = list[k];
+                    const p4 = list[l];
+
+                    // Evitar repetir jugador
+                    if (
+                        p1.id === p3.id ||
+                        p1.id === p4.id ||
+                        p2.id === p3.id ||
+                        p2.id === p4.id
+                    ) continue;
+
+                    // También balanceado segundo equipo
+                    if (Math.abs(p3.cat - p4.cat) !== 1)
+                        continue;
+
+                    if (isValid(p1, p2, p3, p4)) {
+                        return {
+                            team1: [p1, p2],
+                            team2: [p3, p4]
+                        };
+                    }
+                }
+            }
+        }
+    }
+
+    // -------- PASADA 2: CUALQUIER COMBINACIÓN VÁLIDA --------
+    for (let i = 0; i < list.length; i++) {
+        for (let j = i + 1; j < list.length; j++) {
+
+            const p1 = list[i];
+            const p2 = list[j];
+
+            for (let k = 0; k < list.length; k++) {
+                for (let l = k + 1; l < list.length; l++) {
+
+                    const p3 = list[k];
+                    const p4 = list[l];
+
+                    if (
+                        p1.id === p3.id ||
+                        p1.id === p4.id ||
+                        p2.id === p3.id ||
+                        p2.id === p4.id
+                    ) continue;
+
+                    if (isValid(p1, p2, p3, p4)) {
+                        return {
+                            team1: [p1, p2],
+                            team2: [p3, p4]
+                        };
+                    }
+                }
+            }
+        }
+    }
+
+    return null;
+}
+
 function registerHistory(team1Ids, team2Ids) {
 
     const realTeam1 = team1Ids.map(id => players.find(x => x.id === id));
