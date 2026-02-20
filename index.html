@@ -767,6 +767,9 @@ function updateEndTime(i, value) {
         console.log("Partido generado:", newMatch.id);
     }
 
+    console.log("ajustando partidos...");
+    optimizePairs(matches);      // 2️⃣ Ajusta parejas repetidas si es posible
+
     save();
 }
 
