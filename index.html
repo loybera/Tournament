@@ -524,7 +524,7 @@ function renderPlayers() {
                 <small>Ingreso</small>
                 <input type="time"
                     value="${p.startTime || '18:00'}"
-                    ${window.isAdmin ? 'disabled' : ''}
+                    ${!window.isAdmin ? 'disabled' : ''}
                     onchange="updateStartTime(${p.originalIndex}, this.value)">
             </div>
 
@@ -532,7 +532,7 @@ function renderPlayers() {
                 <small>Salida</small>
                 <input type="time"
                     value="${p.endTime || '23:59'}"
-                    ${window.isAdmin ? 'disabled' : ''}
+                    ${!window.isAdmin ? 'disabled' : ''}
                     onchange="updateEndTime(${p.originalIndex}, this.value)">
             </div>
 
