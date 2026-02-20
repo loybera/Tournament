@@ -657,24 +657,66 @@ function generateTimeline() {
         }
 
         function calculateRanking() {
-            let s = {};
-            players.forEach(p => s[p.id] = { name: p.name, wins: 0, games: 0, played: 0 });
-            matches.forEach(m => {
-                if(m.s1 === null || m.s2 === null) return;
-                [...m.t1, ...m.t2].forEach(p => { if(s[p.id]) s[p.id].played++; });
-                m.t1.forEach(p => s[p.id].games += m.s1);
-                m.t2.forEach(p => s[p.id].games += m.s2);
-                if(m.s1 > m.s2) m.t1.forEach(p => s[p.id].wins++);
-                else if(m.s2 > m.s1) m.t2.forEach(p => s[p.id].wins++);
+
+    let s = {};
+
+    // Inicializar tabla
+    players.forEach(p => {
+        s[p.id] = {
+            name: p.name,
+            wins: 0,
+            games: 0,
+            played: 0
+        };
+    });
+
+    matches.forEach(m => {
+
+        if (m.s1 === null || m.s2 === null)
+            return;
+
+        // Partidos jugados
+        [...m.t1, ...m.t2].forEach(id => {
+            if (s[id]) s[id].played++;
+        });
+
+        // Games
+        m.t1.forEach(id => {
+            if (s[id]) s[id].games += m.s1;
+        });
+
+        m.t2.forEach(id => {
+            if (s[id]) s[id].games += m.s2;
+        });
+
+        // Wins
+        if (m.s1 > m.s2) {
+            m.t1.forEach(id => {
+                if (s[id]) s[id].wins++;
             });
-            const sorted = Object.values(s).sort((a,b) => b.wins - a.wins || (b.wins/b.played) - (a.wins/a.played) || b.games - a.games);
-            document.getElementById('rankingContent').innerHTML = sorted.map((p, i) => `
-                <div class="player-list-item">
-                    <span><strong>${i+1}. ${p.name}</strong></span>
-                    <span>${p.wins} G | ${p.games} Pts | ${p.played} PJ</span>
-                </div>
-            `).join('');
+        } else if (m.s2 > m.s1) {
+            m.t2.forEach(id => {
+                if (s[id]) s[id].wins++;
+            });
         }
+
+    });
+
+    const sorted = Object.values(s).sort((a, b) =>
+        b.wins - a.wins ||
+        (b.played ? b.wins / b.played : 0) - (a.played ? a.wins / a.played : 0) ||
+        b.games - a.games
+    );
+
+    document.getElementById('rankingContent').innerHTML =
+        sorted.map((p, i) => `
+            <div class="player-list-item">
+                <span><strong>${i + 1}. ${p.name}</strong></span>
+                <span>${p.wins} G | ${p.games} Pts | ${p.played} PJ</span>
+            </div>
+        `).join('');
+}
+
 
         renderPlayers(); renderCourts(); renderFixture();
 
