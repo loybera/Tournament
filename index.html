@@ -650,25 +650,7 @@ function generateTimeline() {
 
         renderPlayers(); renderCourts(); renderFixture();
 
-        onSnapshot(
-    firestoreDoc(db, "torneos", "americano1"),
-    (docSnap) => {
-
-        if (docSnap.exists()) {
-
-            const data = docSnap.data();
-
-            players = data.players || [];
-            courts = data.courts || [];
-            matches = data.matches || [];
-
-            normalizePlayers();
-            renderPlayers();
-            renderCourts();
-            renderFixture();
-        }
-    }
-);
+     
 
     </script>
 </body>
