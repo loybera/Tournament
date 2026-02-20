@@ -80,6 +80,57 @@
         .bg-hora { background: #64748b; }
         .player-list-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
         .avg-label { font-size: 0.7rem; color: #64748b; margin-top: 4px; display: block; }
+
+        /* ----- PLAYER LIST MOBILE IMPROVEMENT ----- */
+
+.player-list-item {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Desktop mantiene horizontal */
+.player-list-item span {
+    display: block;
+}
+
+/* 📱 MOBILE */
+@media (max-width: 600px) {
+
+    .player-list-item {
+        padding: 12px;
+    }
+
+    .player-list-item strong {
+        font-size: 1rem;
+    }
+
+    .player-list-item small {
+        display: block;
+        margin-top: 6px;
+        font-size: 0.75rem;
+        color: #64748b;
+    }
+
+    .player-list-item input[type="time"] {
+        width: 100%;
+        margin-top: 4px;
+        font-size: 0.9rem;
+        padding: 8px;
+    }
+
+    .player-list-item button {
+        align-self: flex-end;
+        margin-top: 10px;
+        font-size: 1.1rem;
+        padding: 6px 12px;
+        border-radius: 6px;
+        background: #fee2e2;
+    }
+}
+
     </style>
     <script>
         window.players = [];
@@ -246,6 +297,35 @@ function applyAdminRestrictions() {
     adminButtons.forEach(btn => {
         btn.style.display = window.isAdmin ? "block" : "none";
     });
+
+     // 🔹 Inputs de jugadores
+    const playerInputs = document.querySelectorAll(
+        "#playerList input, #playerList button"
+    );
+
+    playerInputs.forEach(el => {
+        el.disabled = !window.isAdmin;
+        if (!window.isAdmin)
+            el.style.opacity = 0.6;
+        else
+            el.style.opacity = 1;
+    });
+
+    // 🔹 Inputs de canchas
+    const courtSection = document.getElementById("canchas");
+    if (courtSection) {
+        const elements = courtSection.querySelectorAll(
+            "input, button"
+        );
+
+        elements.forEach(el => {
+            if (!el.classList.contains("score-input")) {
+                el.disabled = !window.isAdmin;
+                el.style.opacity = window.isAdmin ? 1 : 0.6;
+            }
+        });
+    }
+    
 }
 
 
@@ -286,6 +366,9 @@ function normalizeTime(input, defaultValue) {
 
         
      function importPlayers() {
+
+         if (!window.isAdmin) return;
+
     const lines = document.getElementById('bulkPlayers').value.split('\n');
 
     lines.forEach(line => {
@@ -344,28 +427,36 @@ function renderPlayers() {
         });
 
     document.getElementById('playerList').innerHTML =
-        sortedPlayers.map(p => `
-            <div class="player-list-item">
-                <span>
-                    ${p.name} <strong>(Cat ${p.cat}°)</strong><br>
-
-                    <small>Ingreso:</small>
-                    <input type="time"
-                        value="${p.startTime || '18:00'}"
-                        onchange="updateStartTime(${p.originalIndex}, this.value)"
-                        style="font-size:0.75rem;">
-
-                    <small>Salida:</small>
-                    <input type="time"
-                        value="${p.endTime || '23:59'}"
-                        onchange="updateEndTime(${p.originalIndex}, this.value)"
-                        style="font-size:0.75rem;">
-                </span>
-
-                <button onclick="removePlayer(${p.originalIndex})"
-                    style="color:red;background:none;border:none;cursor:pointer">✕</button>
+    sortedPlayers.map(p => `
+        <div class="player-list-item">
+            
+            <div>
+                <strong>${p.name}</strong>
+                <span style="color:#64748b;">Cat ${p.cat}°</span>
             </div>
-        `).join('');
+
+            <div style="margin-top:8px;">
+                <small>Ingreso</small>
+                <input type="time"
+                    value="${p.startTime || '18:00'}"
+                    onchange="updateStartTime(${p.originalIndex}, this.value)">
+            </div>
+
+            <div style="margin-top:8px;">
+                <small>Salida</small>
+                <input type="time"
+                    value="${p.endTime || '23:59'}"
+                    onchange="updateEndTime(${p.originalIndex}, this.value)">
+            </div>
+
+            <button onclick="removePlayer(${p.originalIndex})"
+                style="color:#dc2626;border:none;cursor:pointer;">
+                Eliminar jugador
+            </button>
+
+        </div>
+    `).join('');
+
 }
 
 
@@ -381,6 +472,8 @@ function updateEndTime(i, value) {
 }
 
         function removePlayer(i) { players.splice(i, 1); save(); renderPlayers(); }
+
+        if (!window.isAdmin) return;
 
         // --- NUEVAS FUNCIONES DE LIMPIEZA ---
         function resetFixtureOnly() {
@@ -408,6 +501,9 @@ function updateEndTime(i, value) {
 
         // --- LÓGICA DE CANCHAS ---
         function addCourt() {
+
+            if (!window.isAdmin) return;
+
             const name = document.getElementById('cName').value;
             const time = document.getElementById('cTime').value;
             if(name && time) {
@@ -424,7 +520,13 @@ function updateEndTime(i, value) {
                 </div>
             `).join('');
         }
-        function removeCourt(i) { courts.splice(i,1); save(); renderCourts(); }
+        function removeCourt(i) { 
+            if (!window.isAdmin) return;
+
+                courts.splice(i,1); 
+            save(); 
+            renderCourts(); 
+        }
 
   function generateTournament(startFromTime = 0, isRegeneration = false) {
 
