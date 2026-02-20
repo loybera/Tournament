@@ -639,7 +639,7 @@ function updateEndTime(i, value) {
 
     console.log("=== GENERANDO TORNEO ===");
 
-    const timeline = generateTimeline(); // Debe devolver array con:
+    const timeline = generateTimelineV2(); // Debe devolver array con:
     // { time, court, timeMins, sortKey }
 
     for (let slot of timeline) {
@@ -1192,7 +1192,33 @@ function deleteMatch(index) {
     save();
     renderFixture();
 }
-  
+
+function generateTimelineV2(slotMinutes = 15) {
+    const timeline = [];
+
+    for (let court of courts) {
+        const [h, m] = court.startTime.split(':').map(Number);
+        let startMins = h*60 + m;
+        const endMins = startMins + 60; // 1 hora de duración
+
+        while (startMins < endMins) { // <-- importante: que incluya último slot
+            const hours = Math.floor(startMins / 60);
+            const minutes = startMins % 60;
+
+            timeline.push({
+                time: `${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}`,
+                court: court.name,
+                timeMins: startMins,
+                sortKey: startMins
+            });
+
+            startMins += slotMinutes;
+        }
+    }
+
+    return timeline;
+}
+        
 function generateTimeline() {
 
     const timeline = [];
@@ -1202,7 +1228,7 @@ function generateTimeline() {
         const [h, m] = c.startTime.split(':').map(Number);
         const baseMins = h * 60 + m;
 
-        // 3 partidos de 20' dentro de la reserva de 60'
+        // 3 partidos de 15' dentro de la reserva de 60'
         for (let i = 0; i < 3; i++) {
 
             const slotMins = baseMins + (i * 15);
