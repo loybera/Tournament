@@ -213,8 +213,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     <div class="container">
         <div id="jugadores" class="card active">
-            <h3>Carga Masiva</h3>
-            <textarea id="bulkPlayers" placeholder="Nombre, Categoria (Ej: Juan, 7)"></textarea>
+            <div id="bulkSection">
+                <h3>Carga Masiva</h3>
+                <textarea id="bulkPlayers"
+                    placeholder="Nombre, Categoria (Ej: Juan, 7)">
+                </textarea>
+                <button class="btn btn-add"
+                    style="width:100%; margin-top:10px"
+                    onclick="importPlayers()">
+                    Importar Lista
+                </button>
+        </div>
+
             <button class="btn btn-add" style="width:100%; margin-top:10px" onclick="importPlayers()">Importar Lista</button>
             <h4 style="margin-top:20px">Inscriptos: <span id="pCount">0</span></h4>
             <div id="playerList"></div>
@@ -292,15 +302,20 @@ function updateAdminUI() {
     const loginSection = document.getElementById("adminLoginSection");
     const logoutBtn = document.getElementById("logoutBtn");
     const status = document.getElementById("adminStatus");
+    const bulkSection = document.getElementById("bulkSection");
+    
+   
 
     if (window.isAdmin) {
         loginSection.style.display = "none";
         logoutBtn.style.display = "block";
         status.innerText = "Modo Admin Activo ✅";
+        bulkSection.style.display = "block";
     } else {
         loginSection.style.display = "block";
         logoutBtn.style.display = "none";
         status.innerText = "Modo Público";
+        bulkSection.style.display = "none";
     }
 }
 
@@ -311,6 +326,9 @@ function logoutAdmin() {
 
     updateAdminUI();
     applyAdminRestrictions();
+    renderPlayers();
+    renderCourts();
+
     openTab(null, "jugadores");
 
 }
@@ -327,6 +345,8 @@ function loginAdmin() {
 
         updateAdminUI();
         applyAdminRestrictions();
+        renderPlayers();
+        renderCourts();
 
 
     } else {
@@ -499,10 +519,13 @@ function renderPlayers() {
                     onchange="updateEndTime(${p.originalIndex}, this.value)">
             </div>
 
-            <button onclick="removePlayer(${p.originalIndex})"
-                style="color:#dc2626;border:none;cursor:pointer;">
-                Eliminar jugador
-            </button>
+           ${window.isAdmin ? `
+                <button onclick="removePlayer(${p.originalIndex})"
+                    style="color:#dc2626;border:none;cursor:pointer;">
+                    Eliminar jugador
+                </button>
+            ` : ``}
+
 
         </div>
     `).join('');
@@ -571,7 +594,12 @@ function updateEndTime(i, value) {
             document.getElementById('courtList').innerHTML = courts.map((c, i) => `
                 <div class="player-list-item">
                     <span><span class="badge bg-cancha">${c.name}</span> Inicio: ${c.startTime} hs</span>
-                    <button onclick="removeCourt(${i})" style="color:red; background:none; border:none; cursor:pointer">✕</button>
+                        ${window.isAdmin ? `
+                             <button onclick="removeCourt(${i})"
+                                style="color:#dc2626;border:none;cursor:pointer;">
+                                Eliminar Reserva
+                            </button>
+                        ` : ``}
                 </div>
             `).join('');
         }
