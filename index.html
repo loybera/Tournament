@@ -296,7 +296,7 @@ document.addEventListener("DOMContentLoaded", () => {
             "Modo Admin Activo ✅";
     }
 
- updateAdminUI();
+     updateAdminUI();
     applyAdminRestrictions();
 });
 
@@ -338,10 +338,11 @@ function logoutAdmin() {
     window.isAdmin = false;
     localStorage.removeItem("isAdmin");
 
-    updateAdminUI();
-    applyAdminRestrictions();
     renderPlayers();
     renderCourts();
+    updateAdminUI();
+    applyAdminRestrictions();
+
 
     openTab(null, "jugadores");
 
@@ -357,10 +358,10 @@ function loginAdmin() {
         window.isAdmin = true;
         localStorage.setItem("isAdmin", "true");
 
-        updateAdminUI();
-        applyAdminRestrictions();
         renderPlayers();
         renderCourts();
+        updateAdminUI();
+        applyAdminRestrictions();
 
 
     } else {
@@ -1282,7 +1283,7 @@ function calculateScheduledMatches(matches) {
     return count;
 }
 
-        renderPlayers(); renderCourts(); renderFixture(); applyAdminRestrictions();
+        renderPlayers(); renderCourts(); renderFixture(); updateAdminUI(); applyAdminRestrictions();
 
 
      
