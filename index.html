@@ -34,28 +34,56 @@
         .avg-label { font-size: 0.7rem; color: #64748b; margin-top: 4px; display: block; }
     </style>
     <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        const firebaseConfig = {
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
   apiKey: "AIzaSyBfsVZKiSplO_m2-JDITvHapJnvW_3idDE",
   authDomain: "padel-americano-sansebastian.firebaseapp.com",
   projectId: "padel-americano-sansebastian",
   storageBucket: "padel-americano-sansebastian.firebasestorage.app",
   messagingSenderId: "211505574132",
-  appId: "1:211505574132:web:d9a00441235e87bd4deea1",
-  measurementId: "G-ZH9M5MHZT5"
+  appId: "1:211505574132:web:d9a00441235e87bd4deea1"
 };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-    window.db = db;
-    window.firestoreDoc = doc;
-    window.getDoc = getDoc;
-    window.setDoc = setDoc;
-    window.onSnapshot = onSnapshot;
+// 👇 Hacemos global lo que necesitás
+window.saveToFirebase = async function(players, courts, matches) {
+
+    const playersToSave = players.map(p => ({
+        ...p,
+        historyPartners: Array.from(p.historyPartners || []),
+        historyRivals: Array.from(p.historyRivals || [])
+    }));
+
+    await setDoc(
+        doc(db, "torneos", "americano1"),
+        { players: playersToSave, courts, matches }
+    );
+};
+
+// 👇 Listener realtime
+onSnapshot(doc(db, "torneos", "americano1"), (docSnap) => {
+
+    if (!docSnap.exists()) return;
+
+    const data = docSnap.data();
+
+    window.players = data.players || [];
+    window.courts = data.courts || [];
+    window.matches = data.matches || [];
+
+    normalizePlayers();
+    renderPlayers();
+    renderCourts();
+    renderFixture();
+});
+
 </script>
+
 
 </head>
 <body>
@@ -117,22 +145,8 @@
 let courts = [];
 let matches = [];
 
-async function save() {
-
-    const playersToSave = players.map(p => ({
-        ...p,
-        historyPartners: Array.from(p.historyPartners || []),
-        historyRivals: Array.from(p.historyRivals || [])
-    }));
-
-    await setDoc(
-        firestoreDoc(db, "torneos", "americano1"),
-        {
-            players: playersToSave,
-            courts,
-            matches
-        }
-    );
+function save() {
+    saveToFirebase(players, courts, matches);
 }
 
         function openTab(evt, name) {
