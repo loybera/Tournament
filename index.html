@@ -269,15 +269,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
         <div id="admin" class="card">
             <h3>Panel Admin</h3>
-        
-            <input type="password" id="adminPass" placeholder="Clave admin">
-            <button class="btn btn-add" style="width:100%; margin-top:10px"
-                onclick="loginAdmin()">Ingresar</button>
-                <button class="btn btn-danger"
-            style="width:100%; margin-top:10px"
-            onclick="logoutAdmin()">
-            Cerrar sesión
-        </button>
+            <div id="adminLoginSection">
+                <input type="password" id="adminPass" placeholder="Clave admin">
+                <button class="btn btn-add" style="width:100%; margin-top:10px" id="loginBtn"
+                    onclick="loginAdmin()">Ingresar</button>
+            </div>
+            <button class="btn btn-danger" id="logoutBtn"
+                style="width:100%; margin-top:10px"
+                onclick="logoutAdmin()">
+                Cerrar sesión
+            </button>
 
             <div id="adminStatus" style="margin-top:15px; font-weight:bold;"></div>
         </div>
@@ -303,14 +304,16 @@ function updateAdminUI() {
 
     const loginSection = document.getElementById("adminLoginSection");
     const logoutBtn = document.getElementById("logoutBtn");
+    const logintBtn = document.getElementById("loginBtn");
     const status = document.getElementById("adminStatus");
     const bulkSection = document.getElementById("bulkSection");
 
-    if (!loginSection || !logoutBtn || !status) return;
+    if (!loginSection || !logoutBtn || !status ||!loginBtn) return;
 
     if (window.isAdmin) {
 
         loginSection.style.display = "none";
+        loginBtn.style.display = "none";
         logoutBtn.style.display = "block";
         status.innerText = "Modo Admin Activo ✅";
 
@@ -321,6 +324,7 @@ function updateAdminUI() {
 
         loginSection.style.display = "block";
         logoutBtn.style.display = "none";
+        loginBtn.style.display = "block";
         status.innerText = "Modo Público";
 
         if (bulkSection)
