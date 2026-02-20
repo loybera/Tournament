@@ -50,6 +50,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+let players = [];
+let courts = [];
+let matches = [];
+        
 // 👇 Hacemos global lo que necesitás
 window.saveToFirebase = async function(players, courts, matches) {
 
@@ -73,9 +77,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const data = docSnap.data();
 
-        window.players = data.players || [];
-        window.courts = data.courts || [];
-        window.matches = data.matches || [];
+        players = data.players || [];
+        courts = data.courts || [];
+        matches = data.matches || [];
 
         normalizePlayers();
         renderPlayers();
@@ -144,9 +148,6 @@ document.addEventListener("DOMContentLoaded", () => {
     </div>
 
     <script>
-        let players = [];
-let courts = [];
-let matches = [];
 
 function save() {
     saveToFirebase(players, courts, matches);
