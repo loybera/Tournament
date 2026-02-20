@@ -33,6 +33,11 @@
         .player-list-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
         .avg-label { font-size: 0.7rem; color: #64748b; margin-top: 4px; display: block; }
     </style>
+    <script>
+        window.players = [];
+        window.courts = [];
+        window.matches = [];
+    </script>
     <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -50,9 +55,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-let players = [];
-let courts = [];
-let matches = [];
         
 // 👇 Hacemos global lo que necesitás
 window.saveToFirebase = async function(players, courts, matches) {
