@@ -366,8 +366,8 @@ function updateEndTime(i, value) {
 
         const newMatch = {
             id: matches.length + 1,
-            t1: match.team1,
-            t2: match.team2,
+            t1: match.team1.map(p => p.id),
+            t2: match.team2.map(p => p.id),
             time: slot.time,
             court: slot.court,
             sortKey: slot.sortKey,
@@ -443,11 +443,10 @@ function findValidMatch(playersList) {
 
     return null;
 }
+function registerHistory(team1Ids, team2Ids) {
 
-function registerHistory(team1, team2) {
-
-    const realTeam1 = team1.map(p => players.find(x => x.id === p.id));
-    const realTeam2 = team2.map(p => players.find(x => x.id === p.id));
+    const realTeam1 = team1Ids.map(id => players.find(x => x.id === id));
+    const realTeam2 = team2Ids.map(id => players.find(x => x.id === id));
 
     if (realTeam1.includes(undefined) || realTeam2.includes(undefined)) {
         console.error("Jugador no encontrado en players");
@@ -610,7 +609,9 @@ function generateTimeline() {
     return timeline.sort((a, b) => a.sortKey - b.sortKey);
 }
 
-        
+        function getPlayer(id) {
+            return players.find(p => p.id === id);
+        }
         function renderFixture() {
             const container = document.getElementById('fixtureContent');
             if(matches.length === 0) { container.innerHTML = "<p style='text-align:center; color:#94a3b8;'>No hay partidos generados. Ve a 'Canchas' y presiona el botón verde.</p>"; return; }
@@ -621,12 +622,26 @@ function generateTimeline() {
                         <span><span class="badge bg-hora">${m.time} HS</span> <span class="badge bg-cancha">${m.court}</span></span>
                     </div>
                     <div class="match-body">
-                        <div><strong>${m.t1[0].name} (${m.t1[0].cat})<br>${m.t1[1].name} (${m.t1[1].cat})</strong></div>
+                        
+                        <div>
+                          <strong>
+                            ${getPlayer(m.t1[0]).name} (${getPlayer(m.t1[0]).cat})<br>
+                            ${getPlayer(m.t1[1]).name} (${getPlayer(m.t1[1]).cat})
+                          </strong>
+                        </div>
+
                         <div>
                             <input type="number" class="score-input" value="${m.s1 !== null ? m.s1 : ''}" onchange="updateScore(${idx}, 1, this.value)">
                             <input type="number" class="score-input" value="${m.s2 !== null ? m.s2 : ''}" onchange="updateScore(${idx}, 2, this.value)">
                         </div>
-                        <div><strong>${m.t2[0].name} (${m.t2[0].cat})<br>${m.t2[1].name} (${m.t2[1].cat})</strong></div>
+
+                        <div>
+                          <strong>
+                            ${getPlayer(m.t2[0]).name} (${getPlayer(m.t2[0]).cat})<br>
+                            ${getPlayer(m.t2[1]).name} (${getPlayer(m.t2[1]).cat})
+                          </strong>
+                        </div>
+
                     </div>
                 </div>
             `).join('');
