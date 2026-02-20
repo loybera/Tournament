@@ -386,7 +386,10 @@ function updateEndTime(i, value) {
         });
 
         // 4️⃣ Guardar historial
-        registerHistory(match.team1, match.team2);
+        registerHistory(
+            match.team1.map(p => p.id),
+            match.team2.map(p => p.id)
+        );
 
         console.log("Partido generado:", newMatch.id);
     }
