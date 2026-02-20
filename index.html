@@ -336,6 +336,17 @@ function updateEndTime(i, value) {
             return true;
         });
 
+        // IDs ya asignados en este mismo horario (mismo sortKey)
+        const ocupadosEnEsteTurno = new Set(
+            matches
+                .filter(m => m.sortKey === slot.sortKey)
+                .flatMap(m => [...m.t1, ...m.t2])
+        );
+        
+        // Excluirlos de disponibles
+        disponibles = disponibles.filter(p => !ocupadosEnEsteTurno.has(p.id));
+        
+                
         if (disponibles.length < 4) {
             console.log("No hay suficientes jugadores.");
             continue;
