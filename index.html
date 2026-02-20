@@ -1265,17 +1265,8 @@ function renderFixture() {
         return; 
     }
 
-    // 🔹 Ordenamos por horario y cancha para que no haya confusión
-    const sortedMatches = [...matches].sort((a, b) => {
-        // Primero por hora
-        if(a.time !== b.time) {
-            return a.time.localeCompare(b.time);
-        }
-        // Luego por cancha
-        return a.court.localeCompare(b.court);
-    });
-
-    container.innerHTML = sortedMatches.map((m, idx) => `
+    // Usamos matches tal cual, sin ordenar
+    container.innerHTML = matches.map((m, idx) => `
         <div class="match-card">
             <div class="match-header">
                 <span>PARTIDO #${m.id}</span>
@@ -1312,6 +1303,7 @@ function renderFixture() {
         </div>
     `).join('');
 }
+
 
 
 function renderFixtureOld() {
@@ -1441,6 +1433,52 @@ function calculateScheduledMatches(matches) {
 
     return count;
 }
+
+        function optimizePairs(matches) {
+    // Agrupar partidos por sortKey (mismo horario)
+    const slots = {};
+    matches.forEach(m => {
+        if (!slots[m.sortKey]) slots[m.sortKey] = [];
+        slots[m.sortKey].push(m);
+    });
+
+    for (let key in slots) {
+        const partidos = slots[key];
+
+        for (let i = 0; i < partidos.length; i++) {
+            const m = partidos[i];
+
+            // Revisión parejas
+            const t1pair = [m.t1[0], m.t1[1]];
+            const t2pair = [m.t2[0], m.t2[1]];
+
+            // Si alguna pareja ya jugó junta antes
+            let needSwap = t1pair.some(id => getPlayer(id).historyPartners.has(t1pair.find(pid => pid !== id))) ||
+                           t2pair.some(id => getPlayer(id).historyPartners.has(t2pair.find(pid => pid !== id)));
+
+            if (!needSwap) continue;
+
+            // Intentar intercambiar jugadores con otro partido del mismo turno
+            for (let j = i + 1; j < partidos.length; j++) {
+                const m2 = partidos[j];
+
+                // Todos los jugadores disponibles
+                const allPlayers = [...t1pair, ...t2pair, ...m2.t1, ...m2.t2];
+
+                // Generar combinaciones válidas
+                const newMatch = findValidMatchPRO2(allPlayers.map(id => getPlayer(id)), true);
+
+                if (newMatch) {
+                    // Reasignar equipos
+                    m.t1 = newMatch.team1.map(p => p.id);
+                    m.t2 = newMatch.team2.map(p => p.id);
+                    break; // salió del ciclo
+                }
+            }
+        }
+    }
+}
+
 
         renderPlayers(); renderCourts(); renderFixture(); updateAdminUI(); applyAdminRestrictions();
 
