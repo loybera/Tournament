@@ -261,32 +261,82 @@ document.addEventListener("DOMContentLoaded", () => {
             <input type="password" id="adminPass" placeholder="Clave admin">
             <button class="btn btn-add" style="width:100%; margin-top:10px"
                 onclick="loginAdmin()">Ingresar</button>
-        
+                <button class="btn btn-danger"
+            style="width:100%; margin-top:10px"
+            onclick="logoutAdmin()">
+            Cerrar sesión
+        </button>
+
             <div id="adminStatus" style="margin-top:15px; font-weight:bold;"></div>
         </div>
 
     </div>
 
     <script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const savedAdmin = localStorage.getItem("isAdmin");
+
+    if (savedAdmin === "true") {
+        window.isAdmin = true;
+        document.getElementById("adminStatus").innerText =
+            "Modo Admin Activo ✅";
+    }
+
+ updateAdminUI();
+    applyAdminRestrictions();
+});
+
+function updateAdminUI() {
+
+    const loginSection = document.getElementById("adminLoginSection");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const status = document.getElementById("adminStatus");
+
+    if (window.isAdmin) {
+        loginSection.style.display = "none";
+        logoutBtn.style.display = "block";
+        status.innerText = "Modo Admin Activo ✅";
+    } else {
+        loginSection.style.display = "block";
+        logoutBtn.style.display = "none";
+        status.innerText = "Modo Público";
+    }
+}
+
+function logoutAdmin() {
+
+    window.isAdmin = false;
+    localStorage.removeItem("isAdmin");
+
+    updateAdminUI();
+    applyAdminRestrictions();
+    openTab(null, "jugadores");
+
+}
 
 function loginAdmin() {
 
     const pass = document.getElementById("adminPass").value;
-
-    // 🔐 Cambiá esta clave
-    const ADMIN_PASSWORD = "padelSanse";
+    const ADMIN_PASSWORD = "padelsanse";
 
     if (pass === ADMIN_PASSWORD) {
+
         window.isAdmin = true;
-        document.getElementById("adminStatus").innerText = "Modo Admin Activo ✅";
-        alert("Admin activado");
+        localStorage.setItem("isAdmin", "true");
+
+        updateAdminUI();
         applyAdminRestrictions();
+
+
     } else {
         alert("Clave incorrecta");
     }
 
     document.getElementById("adminPass").value = "";
 }
+
+
 
 function applyAdminRestrictions() {
 
