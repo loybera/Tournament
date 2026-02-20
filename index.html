@@ -863,6 +863,11 @@ function generateTimeline() {
         if (m.s1 === null || m.s2 === null)
             return;
 
+         // Partidos programados
+        [...m.t1, ...m.t2].forEach(id => {
+            if (s[id]) s[id].scheduled++;
+        });
+
         // Partidos jugados
         [...m.t1, ...m.t2].forEach(id => {
             if (s[id]) s[id].played++;
@@ -899,7 +904,7 @@ function generateTimeline() {
     document.getElementById('rankingContent').innerHTML =
         sorted.map((p, i) => `
             <div class="player-list-item">
-                <span><strong>${i + 1}. ${p.name} (${scheduledCount[p.id] || 0})</strong></span>
+                <span><strong>${i + 1}. ${p.name} (${p.scheduled})</strong></span>
                 <span>${p.wins} G | ${p.games} Pts | ${p.played} PJ</span>
             </div>
         `).join('');
