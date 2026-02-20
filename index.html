@@ -213,6 +213,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     <div class="container">
         <div id="jugadores" class="card active">
+            ${window.isAdmin ? `
             <div id="bulkSection">
                 <h3>Carga Masiva</h3>
                 <textarea id="bulkPlayers"
@@ -223,9 +224,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     onclick="importPlayers()">
                     Importar Lista
                 </button>
-        </div>
+            </div>
+            ` : ``}    
 
-            <button class="btn btn-add" style="width:100%; margin-top:10px" onclick="importPlayers()">Importar Lista</button>
+
             <h4 style="margin-top:20px">Inscriptos: <span id="pCount">0</span></h4>
             <div id="playerList"></div>
             
@@ -240,11 +242,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         <div id="canchas" class="card">
             <h3>Canchas y Horarios</h3>
+            ${window.isAdmin ? `           
             <div class="grid-inputs">
                 <input type="text" id="cName" placeholder="Cancha 1">
                 <input type="time" id="cTime" value="18:00">
                 <button class="btn btn-add" onclick="addCourt()">Añadir</button>
             </div>
+            ` : ``}
+
+
             <div id="courtList"></div>
             <button class="btn btn-gen" onclick="generateTournament()">GENERAR FIXTURE EQUILIBRADO</button>
             <button class="btn btn-warning" 
@@ -303,21 +309,29 @@ function updateAdminUI() {
     const logoutBtn = document.getElementById("logoutBtn");
     const status = document.getElementById("adminStatus");
     const bulkSection = document.getElementById("bulkSection");
-    
-   
+
+    if (!loginSection || !logoutBtn || !status) return;
 
     if (window.isAdmin) {
+
         loginSection.style.display = "none";
         logoutBtn.style.display = "block";
         status.innerText = "Modo Admin Activo ✅";
-        bulkSection.style.display = "block";
+
+        if (bulkSection)
+            bulkSection.style.display = "block";
+
     } else {
+
         loginSection.style.display = "block";
         logoutBtn.style.display = "none";
         status.innerText = "Modo Público";
-        bulkSection.style.display = "none";
+
+        if (bulkSection)
+            bulkSection.style.display = "none";
     }
 }
+
 
 function logoutAdmin() {
 
