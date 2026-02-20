@@ -471,9 +471,14 @@ function updateEndTime(i, value) {
     save();
 }
 
-        function removePlayer(i) { players.splice(i, 1); save(); renderPlayers(); }
-
+        function removePlayer(i) { 
         if (!window.isAdmin) return;
+
+            players.splice(i, 1); 
+            save(); 
+            renderPlayers(); 
+                                 }
+
 
         // --- NUEVAS FUNCIONES DE LIMPIEZA ---
         function resetFixtureOnly() {
