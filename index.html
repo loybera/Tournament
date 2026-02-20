@@ -202,12 +202,27 @@ function save() {
 
 
 
- function renderPlayers() {
+function renderPlayers() {
 
     document.getElementById('pCount').innerText = players.length;
 
+    // Creamos copia con índice original
+    const sortedPlayers = players
+        .map((p, i) => ({ ...p, originalIndex: i }))
+        .sort((a, b) => {
+
+            // Primero categoría
+            if (a.cat !== b.cat)
+                return a.cat - b.cat;
+
+            // Luego nombre
+            return a.name
+                .toLowerCase()
+                .localeCompare(b.name.toLowerCase());
+        });
+
     document.getElementById('playerList').innerHTML =
-        players.map((p, i) => `
+        sortedPlayers.map(p => `
             <div class="player-list-item">
                 <span>
                     ${p.name} <strong>(Cat ${p.cat}°)</strong><br>
@@ -215,21 +230,22 @@ function save() {
                     <small>Ingreso:</small>
                     <input type="time"
                         value="${p.startTime || '18:00'}"
-                        onchange="updateStartTime(${i}, this.value)"
+                        onchange="updateStartTime(${p.originalIndex}, this.value)"
                         style="font-size:0.75rem;">
 
                     <small>Salida:</small>
                     <input type="time"
                         value="${p.endTime || '23:59'}"
-                        onchange="updateEndTime(${i}, this.value)"
+                        onchange="updateEndTime(${p.originalIndex}, this.value)"
                         style="font-size:0.75rem;">
                 </span>
 
-                <button onclick="removePlayer(${i})"
+                <button onclick="removePlayer(${p.originalIndex})"
                     style="color:red;background:none;border:none;cursor:pointer">✕</button>
             </div>
         `).join('');
 }
+
 
 
 function updateStartTime(i, value) {
@@ -833,11 +849,14 @@ function generateTimeline() {
     players.forEach(p => {
         s[p.id] = {
             name: p.name,
+            scheduled: 0,
             wins: 0,
             games: 0,
             played: 0
         };
     });
+
+    const scheduledCount = calculateScheduledMatches(matches);
 
     matches.forEach(m => {
 
@@ -880,12 +899,30 @@ function generateTimeline() {
     document.getElementById('rankingContent').innerHTML =
         sorted.map((p, i) => `
             <div class="player-list-item">
-                <span><strong>${i + 1}. ${p.name}</strong></span>
+                <span><strong>${i + 1}. ${p.name} (${scheduledCount[player.id] || 0})</strong></span>
                 <span>${p.wins} G | ${p.games} Pts | ${p.played} PJ</span>
             </div>
         `).join('');
 }
 
+function calculateScheduledMatches(matches) {
+
+    const count = {};
+
+    matches.forEach(match => {
+
+        [...match.team1, ...match.team2].forEach(player => {
+
+            if (!count[player.id])
+                count[player.id] = 0;
+
+            count[player.id]++;
+
+        });
+    });
+
+    return count;
+}
 
         renderPlayers(); renderCourts(); renderFixture();
 
