@@ -168,23 +168,51 @@ function save() {
             if(name === 'fixture') renderFixture();
         }
 
+function normalizeTime(input, defaultValue) {
+
+    if (!input) return defaultValue;
+
+    input = input.trim();
+
+    // Si viene solo la hora (ej: "18")
+    if (/^\d{1,2}$/.test(input)) {
+        const hour = input.padStart(2, '0');
+        return `${hour}:00`;
+    }
+
+    // Si viene formato HH:MM
+    if (/^\d{1,2}:\d{2}$/.test(input)) {
+        const [h, m] = input.split(':');
+        return `${h.padStart(2, '0')}:${m}`;
+    }
+
+    // Si no es válido, devolver default
+    return defaultValue;
+}
+
+        
      function importPlayers() {
     const lines = document.getElementById('bulkPlayers').value.split('\n');
 
     lines.forEach(line => {
         const parts = line.split(',');
         if(parts.length >= 2) {
-            const name = parts[0].trim();
-            const cat = parseInt(parts[1].trim());
+   
 
+        const name = parts[0]?.trim();
+        const cat = parseInt(parts[1]?.trim());
+
+        const start = normalizeTime(parts[2], "19:00");
+        const end   = normalizeTime(parts[3], "23:00");
+            
             if(name && !isNaN(cat)) {
                 
                 players.push({ 
                     id: Math.random().toString(36).substr(2, 9), 
                     name,
                     cat,
-                    startTime: "19:00",
-                    endTime: "23:00",
+                    startTime: start,
+                    endTime: end,
                     matchesPlayed: 0,
                     lastTurn: -1,
                     historyPartners: new Set(),
