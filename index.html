@@ -1257,7 +1257,72 @@ function generateTimeline() {
             return players.find(p => p.id === id);
         }
 
+// --- RENDER FIXTURE SIN PERDER SCORES ---
 function renderFixture() {
+    const container = document.getElementById('fixtureContent');
+
+    if(matches.length === 0) { 
+        container.innerHTML = "<p style='text-align:center; color:#94a3b8;'>No hay partidos generados. Ve a 'Canchas' y presiona el botón verde.</p>"; 
+        return; 
+    }
+
+    // Creamos copia para ordenar visualmente
+    const sortedMatches = [...matches].sort((a, b) => {
+        if(a.time !== b.time) return a.time.localeCompare(b.time);
+        return a.court.localeCompare(b.court);
+    });
+
+    container.innerHTML = sortedMatches.map(m => `
+        <div class="match-card">
+            <div class="match-header">
+                <span>PARTIDO #${m.id}</span>
+                <span>
+                    <span class="badge bg-hora">${m.time} HS</span> 
+                    <span class="badge bg-cancha">${m.court}</span>
+                </span>
+            </div>
+
+            <div class="match-body">
+                <div>
+                    <strong>
+                        ${getPlayer(m.t1[0]).name} (${getPlayer(m.t1[0]).cat})<br>
+                        ${getPlayer(m.t1[1]).name} (${getPlayer(m.t1[1]).cat})
+                    </strong>
+                </div>
+
+                <div>
+                    <input type="number" class="score-input" 
+                        value="${m.s1 !== null ? m.s1 : ''}" 
+                        onchange="updateScoreById('${m.id}', 1, this.value)">
+                    <input type="number" class="score-input" 
+                        value="${m.s2 !== null ? m.s2 : ''}" 
+                        onchange="updateScoreById('${m.id}', 2, this.value)">
+                </div>
+
+                <div>
+                    <strong>
+                        ${getPlayer(m.t2[0]).name} (${getPlayer(m.t2[0]).cat})<br>
+                        ${getPlayer(m.t2[1]).name} (${getPlayer(m.t2[1]).cat})
+                    </strong>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// --- ACTUALIZAR SCORE POR ID ---
+function updateScoreById(matchId, teamNumber, value) {
+    const match = matches.find(m => m.id == matchId);
+    if(!match) return;
+
+    const val = parseInt(value);
+    if(teamNumber === 1) match.s1 = isNaN(val) ? null : val;
+    else if(teamNumber === 2) match.s2 = isNaN(val) ? null : val;
+
+    save(); // guardamos en Firebase
+}
+
+function renderFixtureV2() {
     const container = document.getElementById('fixtureContent');
 
     if(matches.length === 0) { 
