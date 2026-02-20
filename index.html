@@ -59,16 +59,17 @@ const db = getFirestore(app);
 // 👇 Hacemos global lo que necesitás
 window.saveToFirebase = async function(players, courts, matches) {
 
-    const playersToSave = players.map(p => ({
-        ...p,
-        historyPartners: Array.from(p.historyPartners || []),
-        historyRivals: Array.from(p.historyRivals || [])
-    }));
+      const playersToSave = players.map(p => ({
+    ...p,
+    historyPartners: Array.from(p.historyPartners || []),
+    historyRivals: Array.from(p.historyRivals || [])
+  }));
 
-    await setDoc(
-        doc(db, "torneos", "americano1"),
-        { players: playersToSave, courts, matches }
-    );
+  await setDoc(doc(db, "torneos", "americano1"), {
+    players: playersToSave,
+    courts,
+    matches
+  });
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -79,8 +80,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const data = docSnap.data();
 
-        players = data.players || [];
-        courts = data.courts || [];
+        players = (data.players || []).map(p => ({
+          ...p,
+          historyPartners: new Set(p.historyPartners || []),
+          historyRivals: new Set(p.historyRivals || [])
+        }));        courts = data.courts || [];
         matches = data.matches || [];
 
         normalizePlayers();
