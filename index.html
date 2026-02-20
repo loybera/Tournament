@@ -392,11 +392,17 @@ function updateEndTime(i, value) {
                     ingresoMins = h * 60 + m;
                 }
 
-                let turnosDisponibles =
-                    timeline.filter(t =>
-                        t.timeMins >= ingresoMins &&
-                        t.timeMins <= slot.timeMins
-                    ).length;
+                // Contar horarios únicos, no canchas
+                const horariosUnicos = new Set(
+                    timeline
+                        .filter(t =>
+                            t.timeMins >= ingresoMins &&
+                            t.timeMins <= slot.timeMins
+                        )
+                        .map(t => t.timeMins)
+                );
+                
+                let turnosDisponibles = horariosUnicos.size;
 
                 if (turnosDisponibles === 0) return 0;
 
