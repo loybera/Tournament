@@ -33,6 +33,30 @@
         .player-list-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
         .avg-label { font-size: 0.7rem; color: #64748b; margin-top: 4px; display: block; }
     </style>
+    <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+  apiKey: "AIzaSyBfsVZKiSplO_m2-JDITvHapJnvW_3idDE",
+  authDomain: "padel-americano-sansebastian.firebaseapp.com",
+  projectId: "padel-americano-sansebastian",
+  storageBucket: "padel-americano-sansebastian.firebasestorage.app",
+  messagingSenderId: "211505574132",
+  appId: "1:211505574132:web:d9a00441235e87bd4deea1",
+  measurementId: "G-ZH9M5MHZT5"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.db = db;
+    window.firestoreDoc = doc;
+    window.getDoc = getDoc;
+    window.setDoc = setDoc;
+    window.onSnapshot = onSnapshot;
+</script>
+
 </head>
 <body>
 
@@ -89,11 +113,11 @@
     </div>
 
     <script>
-        let players = JSON.parse(localStorage.getItem('tp_p')) || [];
-        let courts = JSON.parse(localStorage.getItem('tp_c')) || [];
-        let matches = JSON.parse(localStorage.getItem('tp_m')) || [];
+        let players = [];
+let courts = [];
+let matches = [];
 
-function save() {
+async function save() {
 
     const playersToSave = players.map(p => ({
         ...p,
@@ -101,9 +125,14 @@ function save() {
         historyRivals: Array.from(p.historyRivals || [])
     }));
 
-    localStorage.setItem('tp_p', JSON.stringify(playersToSave));
-    localStorage.setItem('tp_c', JSON.stringify(courts));
-    localStorage.setItem('tp_m', JSON.stringify(matches));
+    await setDoc(
+        firestoreDoc(db, "torneos", "americano1"),
+        {
+            players: playersToSave,
+            courts,
+            matches
+        }
+    );
 }
 
         function openTab(evt, name) {
@@ -606,6 +635,27 @@ function generateTimeline() {
         }
 
         renderPlayers(); renderCourts(); renderFixture();
+
+        onSnapshot(
+    firestoreDoc(db, "torneos", "americano1"),
+    (docSnap) => {
+
+        if (docSnap.exists()) {
+
+            const data = docSnap.data();
+
+            players = data.players || [];
+            courts = data.courts || [];
+            matches = data.matches || [];
+
+            normalizePlayers();
+            renderPlayers();
+            renderCourts();
+            renderFixture();
+        }
+    }
+);
+
     </script>
 </body>
 </html>
