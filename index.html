@@ -913,10 +913,10 @@ function calculateScheduledMatches(matches) {
 
         [...match.t1, ...match.t2].forEach(player => {
 
-            if (!count[player.id])
-                count[player.id] = 0;
+            if (!count[player])
+                count[player] = 0;
 
-            count[player.id]++;
+            count[player]++;
 
         });
     });
